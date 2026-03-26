@@ -1,32 +1,98 @@
-<!-- ── AUTH MODULE (SIGNUP/LOGIN) ── -->
-<div id="auth-screen" class="fixed inset-0 z-50 bg-[#050505] flex items-center justify-center p-6">
-    <div class="auth-card w-full max-w-md rounded-3xl p-10 bg-[#111] border border-zinc-800 shadow-2xl">
-        <div class="text-center mb-10">
-            <h2 class="text-3xl font-bold text-white tracking-tighter italic">LexAI</h2>
-            <div class="flex justify-center gap-8 mt-6">
-                <!-- TABS -->
-                <button onclick="setAuthMode('login')" id="login-tab" class="active-tab py-1 text-sm font-semibold border-b-2 border-white text-white">Login</button>
-                <button onclick="setAuthMode('signup')" id="signup-tab" class="py-1 text-sm font-semibold text-zinc-500 border-b-2 border-transparent">Sign Up</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexAI | Executive Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #000; color: #E5E5E5; overflow: hidden; height: 100vh; }
+        .sidebar { background: #080808; border-right: 1px solid #1A1A1A; }
+        .ai-bubble { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 1.5rem; }
+        .user-bubble { background: #141414; border: 1px solid #222; border-radius: 1.2rem; }
+        .input-area { background: rgba(15, 15, 15, 0.9); backdrop-filter: blur(20px); border: 1px solid #222; }
+        .active-tab { border-bottom: 2px solid #FFF; color: #FFF !important; }
+        .typing-cursor::after { content: '|'; animation: blink 0.8s infinite; color: #60A5FA; }
+        @keyframes blink { 50% { opacity: 0; } }
+        /* Auth Screen Styling */
+        #auth-screen { background: #000; z-index: 100; position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: #0A0A0A; border: 1px solid #1A1A1A; width: 100%; max-width: 400px; padding: 40px; border-radius: 24px; }
+        input { background: #111 !important; border: 1px solid #222 !important; color: white !important; outline: none; transition: border 0.2s; }
+        input:focus { border-color: #444 !important; }
+    </style>
+</head>
+<body class="flex h-screen">
+
+<!-- ── AUTH SCREEN ── -->
+<div id="auth-screen">
+    <div class="auth-card">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold tracking-tighter italic text-white">LexAI</h1>
+            <div class="flex justify-center gap-6 mt-6">
+                <button onclick="setAuthMode('login')" id="login-tab" class="active-tab py-1 text-sm font-semibold text-zinc-500 transition-all">Login</button>
+                <button onclick="setAuthMode('signup')" id="signup-tab" class="py-1 text-sm font-semibold text-zinc-500 transition-all">Sign Up</button>
             </div>
         </div>
-
         <div class="space-y-4">
-            <!-- Name field only shows during Signup -->
             <div id="signup-fields" class="hidden">
-                <input id="auth-name" type="text" placeholder="Your Name" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-sm text-white outline-none focus:border-zinc-500">
+                <input id="auth-name" type="text" placeholder="Your Name" class="w-full rounded-xl p-3.5 text-sm">
             </div>
-            
-            <input id="auth-email" type="email" placeholder="Email Address" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-sm text-white outline-none focus:border-zinc-500">
-            
+            <input id="auth-email" type="email" placeholder="Email Address" class="w-full rounded-xl p-3.5 text-sm">
             <div class="relative">
-                <input id="auth-pass" type="password" placeholder="Password" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-sm text-white outline-none focus:border-zinc-500">
-                <!-- Eye Button -->
-                <button onclick="togglePass()" class="absolute right-4 top-3.5 text-zinc-500 hover:text-white transition-colors">👁️</button>
+                <input id="auth-pass" type="password" placeholder="Password" class="w-full rounded-xl p-3.5 text-sm">
+                <button onclick="togglePass()" class="absolute right-4 top-3.5 text-zinc-500">👁️</button>
             </div>
-
-            <button onclick="submitAuth()" class="w-full bg-white text-black font-bold py-4 rounded-xl mt-4 hover:bg-zinc-200 transition-transform active:scale-95">
-                Continue
-            </button>
+            <button onclick="submitAuth()" class="w-full bg-white text-black font-bold py-4 rounded-xl mt-4 hover:bg-zinc-200 transition-all active:scale-95">Continue</button>
         </div>
     </div>
 </div>
+
+<!-- ── MAIN SIDEBAR ── -->
+<aside class="sidebar w-64 flex flex-col hidden md:flex">
+    <div class="p-5">
+        <button onclick="startNewChat()" class="w-full py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-all text-sm font-semibold flex items-center justify-center gap-2">
+            <span>+</span> New Session
+        </button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-4" id="history-list">
+        <p class="text-[10px] uppercase tracking-widest text-zinc-600 font-bold mb-3 px-2">History</p>
+    </div>
+    <div class="p-5 border-t border-zinc-900 space-y-1">
+        <button class="w-full flex items-center gap-3 text-sm text-zinc-400 hover:text-white p-2">Settings</button>
+        <button onclick="handleSignout()" class="w-full flex items-center gap-3 text-sm text-red-600 p-2">Sign Out</button>
+    </div>
+</aside>
+
+<!-- ── CHAT CONTENT ── -->
+<main class="flex-1 flex flex-col relative bg-black">
+    <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center text-center px-6">
+        <h1 class="text-4xl font-bold text-white mb-2">Hi <span id="user-display-name">Counselor</span>,</h1>
+        <p class="text-zinc-500 text-lg">How can I help you today?</p>
+    </div>
+
+    <div id="chat-messages" class="flex-1 overflow-y-auto px-6 py-10 space-y-8 hidden"></div>
+
+    <div class="p-6">
+        <div class="max-w-3xl mx-auto input-area rounded-3xl p-4 shadow-2xl">
+            <textarea id="user-query" rows="1" oninput="autoResize(this)" onkeydown="handleInputKeydown(event)" placeholder="Message LexAI..." class="w-full bg-transparent border-none outline-none text-white text-base py-2 px-3 resize-none"></textarea>
+            <div class="flex items-center justify-between mt-4 border-t border-zinc-800 pt-4">
+                <div class="flex items-center gap-4">
+                    <button onclick="triggerFileUpload()" class="text-zinc-500 hover:text-white transition-colors">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                    </button>
+                    <input type="file" id="hidden-file-input" class="hidden" onchange="handleFileSelect(event)">
+                    <div class="flex items-center gap-2 bg-zinc-900 rounded-full px-3 py-1.5 border border-zinc-800">
+                        <span class="text-[10px] font-bold text-zinc-500">DEEP THINKING</span>
+                        <input type="checkbox" id="think-toggle" class="w-4 h-4 accent-white">
+                    </div>
+                </div>
+                <button onclick="processMessage()" class="bg-white text-black h-10 px-6 rounded-full font-bold hover:scale-105 transition-all">Send</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="chat.js"></script>
+</body>
+</html>
