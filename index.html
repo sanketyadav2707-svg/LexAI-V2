@@ -1,165 +1,172 @@
+<!-- Replace your entire index.html with this -->
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-[#020617]">
+<html lang="en" class="h-full">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LexAI | Sovereign Legal Intelligence</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; color: #f8fafc; }
-        .dark-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); backdrop-filter: blur(20px); }
-        .gold-glow { box-shadow: 0 0 20px rgba(191, 149, 63, 0.15); }
-        .text-gold { color: #BF953F; }
-        .bg-gold { background: linear-gradient(135deg, #BF953F 0%, #8A6E2F 100%); }
-        .sidebar-item:hover { background: rgba(255, 255, 255, 0.05); }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #020617; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-        
-        @keyframes shimmer { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        .thinking-dot { animation: shimmer 1.5s infinite; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LexAI — Master Orchestrator 2026</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        navy: { 950:'#020817', 900:'#0a1628', 800:'#0f2040', 700:'#162a52', 600:'#1e3a6e', 500:'#2563a8' },
+        gold: { 400:'#f0c040', 500:'#d4a843', 600:'#b8902a', 700:'#9a7820' },
+      },
+      fontFamily: { sans:['Inter','sans-serif'], serif:['Cormorant Garamond','serif'] },
+    }
+  }
+}
+</script>
+<style>
+  body{font-family:'Inter',sans-serif;background:#020817;color:#e2e8f0;overflow:hidden;height:100vh;}
+  .navy-glow{background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(37,99,168,0.15),transparent);}
+  
+  /* 2026 UI Components */
+  .execution-plan { border: 1px solid rgba(212,168,67,0.2); background: rgba(10,22,40,0.6); backdrop-filter: blur(10px); }
+  .citation-card { display: flex; align-items: center; gap: 8px; background: rgba(30,58,110,0.3); border: 1px solid rgba(30,58,110,0.5); padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #93c5fd; transition: all 0.2s; }
+  .citation-card:hover { background: rgba(37,99,168,0.4); border-color: #d4a843; }
+  .action-module { background: linear-gradient(135deg, rgba(37,99,168,0.2), rgba(2,8,23,0.8)); border: 1px solid rgba(37,99,168,0.4); border-radius: 12px; padding: 16px; margin-top: 15px; }
+  
+  .agent-step{transition:all 0.4s ease;border:1px solid #1e3a6e;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .agent-step.active{border-color:#d4a843;background:rgba(212,168,67,0.05);}
+  .agent-step.done{border-color:#22c55e;background:rgba(34,197,94,0.05);}
+  .check-icon{color:#22c55e;font-size:16px;}
+  .pending-dot{width:8px;height:8px;border-radius:50%;background:#d4a843;animation:pulse 1.5s ease infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.8);}}
+  
+  .chat-bubble.ai{background:rgba(15,32,64,0.4); border:1px solid rgba(30,58,110,0.3); border-radius:16px 16px 16px 4px; padding:18px;}
+  .chat-bubble.user{background:linear-gradient(135deg,#162a52,#0f2040); border:1px solid #1e3a6e; border-radius:16px 16px 4px 16px; padding:12px 16px; margin-left:auto;}
+  
+  .skeleton{background:linear-gradient(90deg,#0f2040 25%,#162a52 50%,#0f2040 75%);background-size:700px 100%;animation:shimmer 1.8s linear infinite;}
+  @keyframes shimmer{0%{background-position:-700px 0}100%{background-position:700px 0}}
+  
+  .sidebar-item.active{background:rgba(37,99,168,0.18);color:#f0c040;border-color:rgba(37,99,168,0.3);}
+  .tab-btn.active{background:#162a52;color:#f0c040;}
+  .msg-appear{animation:fadeIn 0.3s ease forwards;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
 </head>
-<body class="h-full overflow-hidden">
+<body class="h-full flex flex-col">
 
-    <!-- Auth System -->
-    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#020617] p-4 transition-all duration-700">
-        <div class="w-full max-w-md p-10 space-y-8 dark-card rounded-3xl gold-glow border-slate-800">
-            <div class="text-center">
-                <svg class="mx-auto mb-6" width="70" height="70" viewBox="0 0 100 100">
-                    <path d="M50 10 L50 90 M20 40 L50 25 L80 40" stroke="#BF953F" stroke-width="3" fill="none"/>
-                    <path d="M20 40 Q20 65 35 65 M80 40 Q80 65 65 65" stroke="#f8fafc" stroke-width="3" fill="none"/>
-                    <circle cx="35" cy="75" r="5" fill="#BF953F"/>
-                    <circle cx="65" cy="75" r="5" fill="#BF953F"/>
-                </svg>
-                <h2 class="text-4xl font-bold tracking-tighter">LexAI</h2>
-                <p class="text-slate-400 mt-2 text-sm uppercase tracking-[0.2em]">Institutional Intelligence</p>
+<!-- ═══ AUTH SCREEN ═══ -->
+<div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center navy-glow" style="background-color:#020817;">
+  <div class="w-full max-w-md px-6">
+    <div class="text-center mb-8">
+      <h1 class="font-serif text-4xl font-bold text-white tracking-tight">LexAI</h1>
+      <p class="text-gold-500 text-xs tracking-widest uppercase mt-2">Master Orchestrator 2026</p>
+    </div>
+
+    <div class="bg-navy-900 border border-navy-700 rounded-2xl p-8 shadow-2xl">
+      <div class="flex bg-navy-950 rounded-lg p-1 mb-6 gap-1">
+        <button id="tab-signin" onclick="switchAuthTab('signin')" class="flex-1 py-2 rounded text-xs active">Sign In</button>
+        <button id="tab-signup" onclick="switchAuthTab('signup')" class="flex-1 py-2 rounded text-xs text-slate-500">Sign Up</button>
+      </div>
+
+      <div class="space-y-4">
+        <div id="name-row" class="hidden">
+          <input id="auth-name" type="text" placeholder="Full name" class="w-full bg-navy-950 border border-navy-700 rounded-lg p-3 text-sm">
+        </div>
+        <input id="auth-email" type="email" placeholder="Email address" class="w-full bg-navy-950 border border-navy-700 rounded-lg p-3 text-sm">
+        <input id="auth-pass" type="password" placeholder="Password" class="w-full bg-navy-950 border border-navy-700 rounded-lg p-3 text-sm">
+        <div id="confirm-row" class="hidden">
+          <input id="auth-confirm" type="password" placeholder="Confirm password" class="w-full bg-navy-950 border border-navy-700 rounded-lg p-3 text-sm">
+        </div>
+        <div id="auth-error" class="hidden text-red-400 text-xs text-center p-2 bg-red-900/10 border border-red-900/30 rounded"></div>
+        <button onclick="handleAuth()" class="w-full bg-gold-600 hover:bg-gold-500 text-navy-950 font-bold py-3 rounded-lg transition-all">Enter Workspace →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SPLASH SCREEN ═══ -->
+<div id="splash-screen" class="fixed inset-0 z-40 hidden flex flex-col items-center justify-center" style="background:#020817;">
+  <div class="text-center">
+    <div class="h-16 w-16 bg-navy-800 rounded-2xl border border-gold-500/30 mx-auto mb-6 flex items-center justify-center">
+        <div class="pending-dot"></div>
+    </div>
+    <h1 class="font-serif text-3xl font-bold text-white mb-2">LexAI</h1>
+    <p id="splash-status" class="text-slate-500 text-xs">Initializing Master Orchestrator...</p>
+    <div class="mt-6 w-48 h-1 bg-navy-900 rounded-full overflow-hidden mx-auto">
+        <div id="splash-bar" class="h-full bg-gold-500 transition-all duration-1000" style="width: 0%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app-screen" class="hidden h-screen flex flex-row overflow-hidden" style="background:#020817;">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-64 flex-shrink-0 flex flex-col border-r border-navy-700 bg-navy-900">
+    <div class="p-4 border-b border-navy-700 flex items-center gap-3">
+        <span class="font-serif font-bold text-gold-500 text-xl">LexAI</span>
+    </div>
+    <div class="p-3">
+        <button onclick="startNewChat()" class="w-full py-2 bg-navy-800 border border-gold-500/30 text-gold-500 rounded-lg text-xs font-bold">+ New Legal Query</button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-3" id="chat-history-list"></div>
+    <div class="p-4 border-t border-navy-700">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded bg-gold-600 text-navy-950 flex items-center justify-center font-bold" id="user-avatar">U</div>
+            <div class="text-xs truncate font-medium text-white" id="user-name-display">Counselor</div>
+        </div>
+        <button onclick="handleSignout()" class="w-full py-2 text-xs text-slate-500 hover:text-white border border-slate-800 rounded">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Workspace -->
+  <main class="flex-1 flex flex-col overflow-hidden relative">
+    <header class="flex items-center px-6 py-4 border-b border-navy-700 bg-navy-900/50">
+        <div class="flex-1">
+            <h2 id="current-session-title" class="text-sm font-bold text-white">New Intelligence Query</h2>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Status: Multi-Agent Ready</p>
+        </div>
+        <div class="flex gap-2">
+            <button id="mode-standard" onclick="setMode('standard')" class="px-3 py-1 text-[10px] rounded bg-navy-700 text-gold-500 border border-gold-500/30">Standard</button>
+            <button id="mode-research" onclick="setMode('research')" class="px-3 py-1 text-[10px] rounded text-slate-500 border border-navy-700">Deep Research</button>
+        </div>
+    </header>
+
+    <div id="messages-area" class="flex-1 overflow-y-auto p-6">
+        <div id="messages-container" class="max-w-4xl mx-auto space-y-6">
+            <!-- Welcome -->
+            <div id="welcome-state" class="text-center py-20">
+                <h1 class="text-3xl font-serif text-white mb-4">Welcome back, <span id="welcome-name">Counselor</span></h1>
+                <p class="text-slate-500 text-sm mb-12">Select a protocol to begin analysis.</p>
+                <div class="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+                    <div onclick="sendQuickPrompt('Analyze the risk exposure in this NDA')" class="p-6 bg-navy-900/50 border border-navy-700 rounded-xl hover:border-gold-500/50 cursor-pointer transition-all">
+                        <div class="text-gold-500 mb-2">📄</div>
+                        <div class="text-sm font-bold text-white">Risk Exposure</div>
+                    </div>
+                    <div onclick="sendQuickPrompt('M&A Due Diligence Checklist for SaaS')" class="p-6 bg-navy-900/50 border border-navy-700 rounded-xl hover:border-gold-500/50 cursor-pointer transition-all">
+                        <div class="text-gold-500 mb-2">🏢</div>
+                        <div class="text-sm font-bold text-white">M&A Protocol</div>
+                    </div>
+                </div>
             </div>
-            
-            <form id="auth-form" class="space-y-4">
-                <input type="text" id="user-name-input" required placeholder="Full Name" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-gold-500 transition-all">
-                <input type="email" required placeholder="Corporate Email" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-gold-500 transition-all">
-                <button type="submit" class="w-full bg-gold text-white font-bold py-4 rounded-xl hover:opacity-90 transition-all transform active:scale-95">
-                    Initialize Session
-                </button>
-            </form>
+        </div>
+        <div id="skeleton-loader" class="hidden max-w-4xl mx-auto mt-6">
+            <div class="flex gap-4">
+                <div class="w-8 h-8 rounded bg-navy-800 skeleton"></div>
+                <div class="flex-1 space-y-3">
+                    <div class="h-3 bg-navy-800 skeleton rounded w-3/4"></div>
+                    <div class="h-3 bg-navy-800 skeleton rounded w-full"></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Main Workspace -->
-    <div id="app-ui" class="hidden flex h-full opacity-0 transition-opacity duration-1000">
-        
-        <!-- Sidebar: Chat History Only -->
-        <aside id="sidebar" class="w-72 border-r border-slate-800 bg-[#020617] flex flex-col transition-all duration-500">
-            <div class="p-8 flex items-center gap-3">
-                <div class="w-10 h-10 bg-gold rounded-lg flex items-center justify-center font-bold text-white shadow-lg">L</div>
-                <span class="text-xl font-bold tracking-tight">LexAI</span>
-            </div>
-            
-            <div class="px-4 mb-4">
-                <button onclick="window.location.reload()" class="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-all text-sm font-semibold">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    New Intelligence Brief
-                </button>
-            </div>
-
-            <nav id="history-nav" class="flex-1 overflow-y-auto px-4 space-y-6 pt-4">
-                <!-- History categories (Today, Previous, etc) -->
-            </nav>
-
-            <!-- User Profile -->
-            <div class="p-6 border-t border-slate-800">
-                <div class="flex items-center gap-3">
-                    <div id="user-avatar" class="w-10 h-10 rounded-full bg-gold flex items-center justify-center text-white font-bold text-sm"></div>
-                    <div class="flex-1 overflow-hidden">
-                        <p id="display-name" class="text-sm font-semibold truncate"></p>
-                        <p class="text-[10px] text-gold uppercase tracking-widest font-black">Enterprise Node</p>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <main class="flex-1 flex flex-col relative bg-[#020617]">
-            <!-- Header -->
-            <header class="h-20 border-b border-slate-800/50 flex items-center justify-between px-10 backdrop-blur-md sticky top-0 z-20">
-                <div id="greeting-text" class="text-lg font-medium text-slate-300"></div>
-                <div class="flex items-center gap-4">
-                    <span class="text-[10px] bg-slate-900 border border-slate-800 px-3 py-1 rounded-full text-slate-500 font-bold uppercase tracking-widest">Latency: 14ms</span>
-                </div>
-            </header>
-
-            <!-- Chat Container -->
-            <div id="chat-window" class="flex-1 overflow-y-auto px-10 py-8 scroll-smooth">
-                <!-- Welcome/Feature Grid -->
-                <div id="hero-state" class="max-w-4xl mx-auto mt-12 mb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                    <h1 id="welcome-header" class="text-5xl font-bold mb-6 tracking-tight"></h1>
-                    <p class="text-xl text-slate-400 mb-12">The world's most advanced autonomous legal engine.</p>
-                    
-                    <div class="grid grid-cols-2 gap-6">
-                        <div class="dark-card p-6 rounded-2xl hover:border-gold/50 transition-all group">
-                            <div class="w-12 h-12 bg-slate-900 rounded-xl mb-4 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            </div>
-                            <h3 class="font-bold text-lg mb-2">Massive Document Synthesis</h3>
-                            <p class="text-sm text-slate-500">Upload 1,000+ page filings. LexAI indexes every clause with 99.9% semantic accuracy.</p>
-                        </div>
-                        <div class="dark-card p-6 rounded-2xl hover:border-gold/50 transition-all group">
-                            <div class="w-12 h-12 bg-slate-900 rounded-xl mb-4 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            </div>
-                            <h3 class="font-bold text-lg mb-2">Agentic Orchestration</h3>
-                            <p class="text-sm text-slate-500">Parallel processing across Tax, Risk, and Compliance nodes for zero-mistake outputs.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="message-list" class="max-w-4xl mx-auto space-y-10"></div>
-                
-                <!-- "Thinking" Indicator -->
-                <div id="ai-thinking" class="hidden max-w-4xl mx-auto py-4 flex items-center gap-3 text-slate-500 text-sm italic">
-                    <span class="flex gap-1">
-                        <span class="w-1.5 h-1.5 bg-gold rounded-full thinking-dot"></span>
-                        <span class="w-1.5 h-1.5 bg-gold rounded-full thinking-dot" style="animation-delay: 0.2s"></span>
-                        <span class="w-1.5 h-1.5 bg-gold rounded-full thinking-dot" style="animation-delay: 0.4s"></span>
-                    </span>
-                    Agentic nodes analyzing corpus...
-                </div>
-            </div>
-
-            <!-- Input System -->
-            <div class="px-10 pb-10">
-                <div class="max-w-4xl mx-auto">
-                    <!-- File Progress Bar (Hidden) -->
-                    <div id="upload-progress" class="hidden mb-4 p-4 dark-card rounded-xl">
-                        <div class="flex justify-between text-xs mb-2">
-                            <span id="file-status">Indexing Document...</span>
-                            <span id="progress-percent">0%</span>
-                        </div>
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                            <div id="progress-bar" class="bg-gold h-full w-0 transition-all duration-300"></div>
-                        </div>
-                    </div>
-
-                    <div class="relative dark-card rounded-3xl p-2 border-slate-700/50 shadow-2xl focus-within:border-gold/40 transition-all">
-                        <div class="flex items-end">
-                            <label class="p-4 cursor-pointer text-slate-500 hover:text-gold transition-colors">
-                                <input type="file" id="file-upload" class="hidden" multiple>
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                            </label>
-                            <textarea id="chat-input" rows="1" class="w-full bg-transparent border-none focus:outline-none p-4 text-slate-200 resize-none max-h-60" placeholder="Ask anything, or upload complex files..."></textarea>
-                            <button id="send-btn" class="m-2 p-4 bg-gold text-white rounded-2xl hover:shadow-[0_0_15px_rgba(191,149,63,0.4)] transition-all">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
+    <!-- Input -->
+    <div class="p-6 bg-navy-950 border-t border-navy-700">
+        <div class="max-w-4xl mx-auto relative">
+            <textarea id="user-input" oninput="autoResizeTextarea(this)" onkeydown="handleInputKeydown(event)" placeholder="Ask the Master Orchestrator..." class="w-full bg-navy-900 border border-navy-700 rounded-xl p-4 pr-24 text-sm text-white focus:border-gold-500 transition-all outline-none resize-none" rows="1"></textarea>
+            <button onclick="sendMessage()" id="send-btn" class="absolute right-3 bottom-3 bg-gold-600 text-navy-950 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gold-500">Send</button>
+        </div>
     </div>
+  </main>
+</div>
 
-    <script src="chat.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
