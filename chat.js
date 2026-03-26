@@ -1,80 +1,150 @@
-const LexBrain = {
-    lastAction: null,
-    lastResponse: "", // Track to prevent repetition
+'use strict';
 
+const State = {
+    currentUser: null,
+    lastAiAction: null,
+    authMode: 'login'
+};
+
+/* ═══════════════════════════════════════════
+   1. AUTHENTICATION & UI FIXES
+═══════════════════════════════════════════ */
+
+function setAuthMode(mode) {
+    State.authMode = mode;
+    const signupFields = document.getElementById('signup-fields');
+    const loginTab = document.getElementById('login-tab');
+    const signupTab = document.getElementById('signup-tab');
+    const continueBtn = document.getElementById('auth-continue-btn');
+
+    if (mode === 'signup') {
+        signupFields.classList.remove('hidden');
+        setTimeout(() => {
+            signupFields.style.opacity = '1';
+            signupFields.style.transform = 'translateY(0)';
+        }, 10);
+        signupTab.classList.add('active-tab');
+        signupTab.style.color = "#FFF";
+        loginTab.classList.remove('active-tab');
+        loginTab.style.color = "#71717a"; // zinc-500
+        continueBtn.innerText = "Create Account";
+    } else {
+        signupFields.style.opacity = '0';
+        signupFields.style.transform = 'translateY(8px)';
+        setTimeout(() => signupFields.classList.add('hidden'), 300);
+        loginTab.classList.add('active-tab');
+        loginTab.style.color = "#FFF";
+        signupTab.classList.remove('active-tab');
+        signupTab.style.color = "#71717a";
+        continueBtn.innerText = "Continue";
+    }
+}
+
+function submitAuth() {
+    const email = document.getElementById('auth-email').value;
+    const name = document.getElementById('auth-name').value || email.split('@')[0];
+    const logo = document.getElementById('auth-logo');
+
+    if(!email || email.length < 5) return alert("Valid email required.");
+
+    // SUCCESS ANIMATION
+    logo.classList.add('logo-animate');
+    
+    setTimeout(() => {
+        State.currentUser = { name, email };
+        localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('user-display-name').innerText = name;
+    }, 600);
+}
+
+function togglePass() {
+    const p = document.getElementById('auth-pass');
+    p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+/* ═══════════════════════════════════════════
+   2. THE IMPROVED BRAIN (SUBJECT AWARENESS)
+═══════════════════════════════════════════ */
+
+const LexBrain = {
     think: function(query, isDeep) {
         const input = query.toLowerCase().trim();
         
-        // 1. SELF-AWARENESS: If the user is criticizing Lex's performance
-        if (input.includes('dumb') || input.includes('asshole') || input.includes('bad') || input.includes('stupid')) {
-            return "You're right to be frustrated. That last response was a repetitive loop and didn't help you at all. I've reset my logic—let's actually talk about what you need. What did I miss?";
+        // Critical Performance Check
+        if (input.includes('dumb') || input.includes('asshole') || input.includes('shitty')) {
+            return "I apologize. I got stuck in a repetitive loop. I've cleared that logic path. Let's restart: What specifically can I help you with right now?";
         }
 
-        // 2. SOCIAL THREADING
-        if (State.lastAiAction === 'asked_status' && input.length < 20) {
-            State.lastAiAction = 'social';
-            return this.handleSocialFollowup(input);
-        }
-
-        // 3. SUBJECT-SPECIFIC INTELLIGENCE
+        // Contextual Awareness
         if (input.includes('consultant') || input.includes('consulting')) {
-            return "Consultants essentially sell high-level problem solving. Whether it's MBB-style strategy or specialized tech implementation, the goal is to provide an outside perspective that the internal team is too 'close' to see. Are you looking to hire one, or looking to optimize how you work as one?";
+            return "Consulting is about providing that high-level objective lens. Whether you're navigating a restructure or a digital transformation, the goal is clarity. Are we looking at a specific firm or a strategy?";
         }
 
-        if (input.includes('1000 page') || input.includes('summary') || input.includes('read')) {
-            return "Processing a 1000-page document requires serious synthesis. I'd need to chunk the data into themes—looking for executive summaries, financial risks, and core KPIs—rather than just reading line-by-line. If you upload that file, I can Semantically Search it to find exactly what matters. Where should we start?";
+        if (input.includes('1000 page') || input.includes('summary')) {
+            return "Summarizing 1,000 pages isn't just about shortening text—it's about finding the needle in the haystack. If you upload it, I'll map the KPIs and risks across the whole document. Ready?";
         }
 
-        // 4. TASK DETECTION
         if (this.isSmallTalk(input)) {
             if (input.includes('how are you')) {
                 State.lastAiAction = 'asked_status';
-                return "I'm doing great. Much better now that we're talking. How are things on your side?";
+                return "I'm doing great. Much better now that we're talking. How is your day going?";
             }
-            return "Hey. I'm ready. What's the move?";
+            return "Hey. I'm here. What's on the agenda?";
         }
 
-        // 5. PROFESSIONAL FALLBACK (Enhanced to avoid repetition)
-        State.lastAiAction = 'working';
+        // Dynamic Feedback
+        if (State.lastAiAction === 'asked_status' && input.length < 15) {
+            State.lastAiAction = 'social';
+            return "Glad to hear that. A clear mind makes for better strategy. What are we tackling first?";
+        }
+
         return this.handleTask(input, isDeep);
     },
 
     isSmallTalk: function(input) {
-        return input.length < 15 || ['hi', 'hello', 'hey', 'good', 'thanks'].some(k => input.includes(k));
-    },
-
-    handleSocialFollowup: function(input) {
-        if (['good', 'great', 'well', 'fine'].some(w => input.includes(w))) {
-            return "Glad to hear it. Let's keep that momentum. What can I take off your plate right now?";
-        }
-        return "Understood. I'm here when you're ready to get to the heavy stuff.";
+        return input.length < 12 || ['hi', 'hello', 'hey', 'good', 'fine'].some(k => input.includes(k));
     },
 
     handleTask: function(input, isDeep) {
-        // Diversified responses to prevent the "Tape Recorder" effect
-        const legalWork = [
-            "Legal frameworks are all about liability protection. We should look at the indemnification and see if it's mutual or one-sided.",
-            "In a contract like this, the 'Force Majeure' and 'Termination' clauses are where the real surprises live. Want me to check those?",
-            "Usually, with legal documents, the devil is in the definitions section. One wrong word changes the whole deal."
+        // Prevent repeating "Scalability"
+        const strategyLines = [
+            "This moves us into a competitive territory. We need to look at the resource overhead vs the payoff.",
+            "That's a bold move. Usually, the risk here lies in the execution speed. How fast can we pivot if this fails?",
+            "I'm seeing a potential for high leverage here. We should focus on the one metric that defines success for this."
         ];
-
-        const businessWork = [
-            "From a business standpoint, this looks like a resource allocation problem. Are we optimizing for speed or for cost?",
-            "Market scalability usually hits a wall at the operations level. Have we checked if the current team can handle a 10x lead volume?",
-            "If we look at the competitive landscape, this move either puts you ahead or makes you a target. Which one is it?"
-        ];
-
-        let response = "";
-        if (input.includes('legal') || input.includes('contract') || input.includes('nda')) {
-            response = legalWork[Math.floor(Math.random() * legalWork.length)];
-        } else if (input.includes('business') || input.includes('strategy') || input.includes('market')) {
-            response = businessWork[Math.floor(Math.random() * businessWork.length)];
-        } else {
-            response = "That's a broad area. To give you a high-level answer: most people tackle this by defining the 'North Star' metric first. What's the one result you absolutely need from this?";
-        }
-
-        if (isDeep) response += "\n\nDeep thinking: I've cross-referenced this with similar case studies; the risk-to-reward ratio here is higher than it looks on the surface.";
         
-        return response;
+        let res = strategyLines[Math.floor(Math.random() * strategyLines.length)];
+        if (isDeep) res += "\n\nDeep Thinking: My analysis of current market patterns suggests a 15% efficiency gap we could exploit here.";
+        return res;
     }
 };
+
+/* ═══════════════════════════════════════════
+   3. UI MESSAGING PIPELINE
+═══════════════════════════════════════════ */
+
+function processMessage() {
+    const input = document.getElementById('user-query');
+    const query = input.value.trim();
+    if (!query) return;
+
+    document.getElementById('welcome-screen').classList.add('hidden');
+    const chatBox = document.getElementById('chat-messages');
+    chatBox.classList.remove('hidden');
+
+    appendBubble('user', query);
+    input.value = '';
+    input.style.height = 'auto';
+
+    const isDeep = document.getElementById('think-toggle').checked;
+    const typingId = appendTypingIndicator();
+    
+    setTimeout(() => {
+        document.getElementById(typingId)?.remove();
+        const response = LexBrain.think(query, isDeep);
+        streamText(response);
+    }, 600);
+}
+
+// Ensure your existing streamText, appendBubble, and appendTypingIndicator functions are below this point
