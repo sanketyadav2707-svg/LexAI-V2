@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LexAI — Enterprise Legal & Business Intelligence</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        navy: { 950:'#020817', 900:'#0a1628', 800:'#0f2040', 700:'#162a52', 600:'#1e3a6e', 500:'#2563a8' },
+        slate: { 850:'#141e30', 800:'#1e293b', 700:'#273548', 600:'#334155' },
+        gold: { 400:'#f0c040', 500:'#d4a843', 600:'#b8902a', 700:'#9a7820' },
+        cream: '#f8f6f0',
+      },
+      fontFamily: { sans:['Inter','sans-serif'], serif:['Cormorant Garamond','serif'] },
+      animation: {
+        'fade-in':'fadeIn 0.4s ease forwards',
+        'slide-in':'slideIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards',
+        'pulse-slow':'pulse 2.5s ease infinite',
+        'shimmer':'shimmer 1.8s linear infinite',
+      },
+      keyframes: {
+        fadeIn:{'0%':{opacity:'0',transform:'translateY(10px)'},'100%':{opacity:'1',transform:'translateY(0)'}},
+        slideIn:{'0%':{opacity:'0',transform:'translateX(-16px)'},'100%':{opacity:'1',transform:'translateX(0)'}},
+        shimmer:{'0%':{backgroundPosition:'-700px 0'},'100%':{backgroundPosition:'700px 0'}},
+      }
+    }
+  }
+}
+</script>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#020817;color:#e2e8f0;overflow:hidden;height:100vh;}
+  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#1e3a6e;border-radius:4px;}
+  ::-webkit-scrollbar-thumb:hover{background:#2563a8;}
+  .skeleton{background:linear-gradient(90deg,#0f2040 25%,#162a52 50%,#0f2040 75%);background-size:700px 100%;animation:shimmer 1.8s linear infinite;}
+  .gold-text{background:linear-gradient(135deg,#f0c040,#d4a843,#b8902a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .agent-step{transition:all 0.4s ease;border:1px solid #1e3a6e;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .agent-step.active{border-color:#d4a843;background:rgba(212,168,67,0.05);}
+  .agent-step.done{border-color:#22c55e;background:rgba(34,197,94,0.05);}
+  .citation-link{display:inline-flex;align-items:center;gap:3px;background:rgba(37,99,168,0.15);border:1px solid rgba(37,99,168,0.3);border-radius:4px;padding:1px 6px;font-size:11px;color:#60a5fa;cursor:pointer;transition:all 0.2s;text-decoration:none;}
+  .hitl-panel{border:1px solid rgba(212,168,67,0.35);background:linear-gradient(135deg,rgba(212,168,67,0.06),rgba(15,32,64,0.85));border-radius:12px;padding:16px;}
+  .stream-cursor{display:inline-block;width:2px;height:14px;background:#d4a843;animation:blink 0.8s ease infinite;vertical-align:middle;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+  .sidebar-item{padding:8px 10px;border-radius:8px;font-size:12.5px;color:#94a3b8;cursor:pointer;transition:all 0.2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+  .sidebar-item:hover{background:rgba(37,99,168,0.12);color:#e2e8f0;}
+  .sidebar-item.active{background:rgba(37,99,168,0.18);color:#f0c040;border-color:rgba(37,99,168,0.3);}
+  .chat-bubble{max-width:80%;line-height:1.65;font-size:14px;margin-bottom:12px;}
+  .chat-bubble.user{background:#162a52;border-radius:16px 16px 4px 16px;padding:12px 16px;margin-left:auto;border:1px solid #1e3a6e;}
+  .chat-bubble.ai{background:rgba(15,32,64,0.6);border-radius:16px 16px 16px 4px;padding:14px 18px;border:1px solid rgba(30,58,110,0.4);}
+</style>
+</head>
+<body class="h-full flex flex-col">
+
+<div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center" style="background-color:#020817;">
+  <div class="w-full max-w-md px-6 animate-fade-in text-center">
+    <h1 class="font-serif text-3xl font-bold text-white mb-8">LexAI</h1>
+    <div class="bg-navy-900 border border-navy-700 rounded-2xl p-8 shadow-2xl" style="background:#0a1628;">
+      <div class="flex bg-navy-950 rounded-lg p-1 mb-6 gap-1">
+        <button id="tab-signin" onclick="switchAuthTab('signin')" class="flex-1 py-2 text-sm font-medium rounded-md bg-navy-800 text-gold-500">Sign In</button>
+        <button id="tab-signup" onclick="switchAuthTab('signup')" class="flex-1 py-2 text-sm font-medium rounded-md text-slate-400">Sign Up</button>
+      </div>
+      <div class="space-y-4">
+        <input id="auth-email" type="email" placeholder="Email address" class="w-full bg-navy-950 border border-navy-700 rounded-lg p-3 text-white">
+        <input id="auth-pass" type="password" placeholder="Password" class="w-full bg-navy-950 border border-navy-700 rounded-lg p-3 text-white">
+        <button onclick="handleAuth()" class="w-full bg-gold-600 text-navy-950 font-bold py-3 rounded-lg hover:bg-gold-500 transition-all">Enter Workspace →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="app-screen" class="hidden h-screen flex flex-row overflow-hidden">
+  <aside id="sidebar" class="w-64 flex-shrink-0 flex flex-col border-r" style="background:#0a1628;border-color:#162a52;">
+    <div class="p-4 border-b border-navy-800 flex items-center gap-3">
+      <span class="font-serif font-bold text-white text-xl">LexAI</span>
+    </div>
+    <div class="p-3">
+      <button onclick="startNewChat()" class="w-full bg-navy-800 border border-gold-600/30 text-gold-500 p-2 rounded-lg text-sm font-medium">+ New Query</button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-3" id="chat-history-list"></div>
+    <div class="p-4 border-t border-navy-800">
+      <button onclick="handleSignout()" class="text-slate-500 text-xs hover:text-white">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="flex-1 flex flex-col overflow-hidden relative">
+    <div class="flex-1 overflow-y-auto p-6" id="messages-area">
+      <div id="messages-container" class="max-w-4xl mx-auto"></div>
+    </div>
+    <div class="p-4 border-t border-navy-800" style="background:#0a1628;">
+      <div class="max-w-4xl mx-auto relative">
+        <textarea id="user-input" placeholder="Analyze legal risk, draft contracts, or research case law..." class="w-full bg-navy-950 border border-navy-700 rounded-xl p-4 text-white resize-none" rows="2" onkeydown="handleInputKeydown(event)"></textarea>
+        <button onclick="sendMessage()" class="absolute right-3 bottom-3 bg-gold-600 text-navy-950 px-4 py-2 rounded-lg font-bold text-sm">Send</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="chat.js"></script>
+</body>
+</html>
