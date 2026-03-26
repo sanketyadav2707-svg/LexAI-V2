@@ -2,14 +2,16 @@
 
 const State = {
     currentUser: null,
-    lastAiAction: null
+    lastAiAction: null,
+    authMode: 'login'
 };
 
 /* ═══════════════════════════════════════════
-   1. AUTHENTICATION & TOGGLES
+   1. AUTHENTICATION & ANIMATIONS
 ═══════════════════════════════════════════ */
 
 function setAuthMode(mode) {
+    State.authMode = mode;
     const signupFields = document.getElementById('signup-fields');
     const loginTab = document.getElementById('login-tab');
     const signupTab = document.getElementById('signup-tab');
@@ -25,37 +27,39 @@ function setAuthMode(mode) {
     }
 }
 
+function submitAuth() {
+    const email = document.getElementById('auth-email').value;
+    const name = document.getElementById('auth-name').value || email.split('@')[0];
+    const logo = document.getElementById('auth-logo');
+
+    if(!email) return alert("Email required.");
+
+    // Trigger Logo Animation on Signup/Login
+    logo.classList.add('logo-animate');
+
+    // Small delay to let the animation finish before entering
+    setTimeout(() => {
+        State.currentUser = { name, email };
+        localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
+        
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('user-display-name').innerText = name;
+    }, 800); 
+}
+
 function togglePass() {
     const p = document.getElementById('auth-pass');
     p.type = p.type === 'password' ? 'text' : 'password';
 }
 
-function submitAuth() {
-    const email = document.getElementById('auth-email').value;
-    const name = document.getElementById('auth-name').value || email.split('@')[0];
-    if(!email) return alert("Email required.");
-    
-    State.currentUser = { name, email };
-    localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
-    
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('user-display-name').innerText = name;
-}
-
-function handleSignout() {
-    localStorage.removeItem('lex_user');
-    location.reload();
-}
-
 /* ═══════════════════════════════════════════
-   2. CONVERSATIONAL BRAIN
+   2. CONVERSATIONAL BRAIN & UI
 ═══════════════════════════════════════════ */
 
 const LexBrain = {
     think: function(query, isDeep) {
         const input = query.toLowerCase().trim();
         
-        // Social Threading
         if (State.lastAiAction === 'asked_status') {
             State.lastAiAction = 'social';
             return this.handleSocialFollowup(input);
@@ -69,7 +73,6 @@ const LexBrain = {
             return "Hey! I'm here. What can we tackle today?";
         }
 
-        // Strategy/Work
         State.lastAiAction = 'working';
         return this.handleTask(query, isDeep);
     },
@@ -97,10 +100,6 @@ const LexBrain = {
         return res;
     }
 };
-
-/* ═══════════════════════════════════════════
-   3. UI CONTROLS
-═══════════════════════════════════════════ */
 
 function processMessage() {
     const input = document.getElementById('user-query');
@@ -166,6 +165,7 @@ function handleFileSelect(e) { if(e.target.files[0]) appendBubble('ai', `File re
 function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 function handleInputKeydown(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); processMessage(); } }
 function startNewChat() { location.reload(); }
+function handleSignout() { localStorage.removeItem('lex_user'); location.reload(); }
 
 window.onload = () => {
     const saved = localStorage.getItem('lex_user');
