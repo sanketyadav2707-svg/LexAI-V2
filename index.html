@@ -15,35 +15,56 @@
         .active-tab { border-bottom: 2px solid #FFF; color: #FFF !important; }
         .typing-cursor::after { content: '|'; animation: blink 0.8s infinite; color: #60A5FA; }
         @keyframes blink { 50% { opacity: 0; } }
-        /* Auth Screen Styling */
+
+        /* NEW ANIMATIONS */
+        @keyframes slideUp { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+
+        @keyframes logoSuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); filter: drop-shadow(0 0 20px #fff); }
+            100% { transform: scale(1); }
+        }
+        .logo-animate { animation: logoSuccess 0.8s ease-in-out forwards; }
+
         #auth-screen { background: #000; z-index: 100; position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
         .auth-card { background: #0A0A0A; border: 1px solid #1A1A1A; width: 100%; max-width: 400px; padding: 40px; border-radius: 24px; }
-        input { background: #111 !important; border: 1px solid #222 !important; color: white !important; outline: none; transition: border 0.2s; }
-        input:focus { border-color: #444 !important; }
+        input { background: #111 !important; border: 1px solid #222 !important; color: white !important; outline: none; transition: all 0.2s; }
+        input:focus { border-color: #555 !important; box-shadow: 0 0 10px rgba(255,255,255,0.05); }
     </style>
 </head>
 <body class="flex h-screen">
 
 <!-- ── AUTH SCREEN ── -->
 <div id="auth-screen">
-    <div class="auth-card">
+    <div class="auth-card transition-all duration-500">
         <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold tracking-tighter italic text-white">LexAI</h1>
-            <div class="flex justify-center gap-6 mt-6">
-                <button onclick="setAuthMode('login')" id="login-tab" class="active-tab py-1 text-sm font-semibold text-zinc-500 transition-all">Login</button>
-                <button onclick="setAuthMode('signup')" id="signup-tab" class="py-1 text-sm font-semibold text-zinc-500 transition-all">Sign Up</button>
+            <!-- Animated Logo Container -->
+            <h1 id="auth-logo" class="text-3xl font-bold tracking-tighter italic text-white transition-all">LexAI</h1>
+            
+            <div class="flex justify-center gap-10 mt-8 border-b border-zinc-900">
+                <button onclick="setAuthMode('login')" id="login-tab" class="active-tab py-2 text-sm font-semibold text-zinc-500 transition-all hover:text-white">Login</button>
+                <button onclick="setAuthMode('signup')" id="signup-tab" class="py-2 text-sm font-semibold text-zinc-500 transition-all hover:text-white">Sign Up</button>
             </div>
         </div>
+
         <div class="space-y-4">
             <div id="signup-fields" class="hidden">
-                <input id="auth-name" type="text" placeholder="Your Name" class="w-full rounded-xl p-3.5 text-sm">
+                <input id="auth-name" type="text" placeholder="Your Name" class="w-full rounded-xl p-3.5 text-sm animate-slide-up">
             </div>
             <input id="auth-email" type="email" placeholder="Email Address" class="w-full rounded-xl p-3.5 text-sm">
+            
             <div class="relative">
                 <input id="auth-pass" type="password" placeholder="Password" class="w-full rounded-xl p-3.5 text-sm">
-                <button onclick="togglePass()" class="absolute right-4 top-3.5 text-zinc-500">👁️</button>
+                <button onclick="togglePass()" class="absolute right-4 top-3.5 text-zinc-500 hover:text-white transition-colors">👁️</button>
             </div>
-            <button onclick="submitAuth()" class="w-full bg-white text-black font-bold py-4 rounded-xl mt-4 hover:bg-zinc-200 transition-all active:scale-95">Continue</button>
+
+            <button onclick="submitAuth()" class="w-full bg-white text-black font-bold py-4 rounded-xl mt-6 hover:bg-zinc-200 transition-all active:scale-95 shadow-lg active:shadow-none">
+                Continue
+            </button>
         </div>
     </div>
 </div>
@@ -51,7 +72,7 @@
 <!-- ── MAIN SIDEBAR ── -->
 <aside class="sidebar w-64 flex flex-col hidden md:flex">
     <div class="p-5">
-        <button onclick="startNewChat()" class="w-full py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-all text-sm font-semibold flex items-center justify-center gap-2">
+        <button onclick="startNewChat()" class="w-full py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-all active:scale-95 text-sm font-semibold flex items-center justify-center gap-2">
             <span>+</span> New Session
         </button>
     </div>
@@ -59,8 +80,8 @@
         <p class="text-[10px] uppercase tracking-widest text-zinc-600 font-bold mb-3 px-2">History</p>
     </div>
     <div class="p-5 border-t border-zinc-900 space-y-1">
-        <button class="w-full flex items-center gap-3 text-sm text-zinc-400 hover:text-white p-2">Settings</button>
-        <button onclick="handleSignout()" class="w-full flex items-center gap-3 text-sm text-red-600 p-2">Sign Out</button>
+        <button class="w-full flex items-center gap-3 text-sm text-zinc-400 hover:text-white p-2 transition-colors">Settings</button>
+        <button onclick="handleSignout()" class="w-full flex items-center gap-3 text-sm text-red-600 p-2 transition-colors">Sign Out</button>
     </div>
 </aside>
 
@@ -78,16 +99,16 @@
             <textarea id="user-query" rows="1" oninput="autoResize(this)" onkeydown="handleInputKeydown(event)" placeholder="Message LexAI..." class="w-full bg-transparent border-none outline-none text-white text-base py-2 px-3 resize-none"></textarea>
             <div class="flex items-center justify-between mt-4 border-t border-zinc-800 pt-4">
                 <div class="flex items-center gap-4">
-                    <button onclick="triggerFileUpload()" class="text-zinc-500 hover:text-white transition-colors">
+                    <button onclick="triggerFileUpload()" class="text-zinc-500 hover:text-white transition-all active:scale-90">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                     </button>
                     <input type="file" id="hidden-file-input" class="hidden" onchange="handleFileSelect(event)">
                     <div class="flex items-center gap-2 bg-zinc-900 rounded-full px-3 py-1.5 border border-zinc-800">
                         <span class="text-[10px] font-bold text-zinc-500">DEEP THINKING</span>
-                        <input type="checkbox" id="think-toggle" class="w-4 h-4 accent-white">
+                        <input type="checkbox" id="think-toggle" class="w-4 h-4 accent-white cursor-pointer">
                     </div>
                 </div>
-                <button onclick="processMessage()" class="bg-white text-black h-10 px-6 rounded-full font-bold hover:scale-105 transition-all">Send</button>
+                <button onclick="processMessage()" class="bg-white text-black h-10 px-6 rounded-full font-bold hover:scale-105 active:scale-95 transition-all">Send</button>
             </div>
         </div>
     </div>
