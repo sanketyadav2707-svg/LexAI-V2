@@ -1,79 +1,177 @@
-const LexBrain = {
-    // Memory of the last thing Lex said
-    lastAction: null,
+'use strict';
 
+const State = {
+    currentUser: null,
+    lastAiAction: null
+};
+
+/* ═══════════════════════════════════════════
+   1. AUTHENTICATION & TOGGLES
+═══════════════════════════════════════════ */
+
+function setAuthMode(mode) {
+    const signupFields = document.getElementById('signup-fields');
+    const loginTab = document.getElementById('login-tab');
+    const signupTab = document.getElementById('signup-tab');
+
+    if (mode === 'signup') {
+        signupFields.classList.remove('hidden');
+        signupTab.classList.add('active-tab');
+        loginTab.classList.remove('active-tab');
+    } else {
+        signupFields.classList.add('hidden');
+        loginTab.classList.add('active-tab');
+        signupTab.classList.remove('active-tab');
+    }
+}
+
+function togglePass() {
+    const p = document.getElementById('auth-pass');
+    p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+function submitAuth() {
+    const email = document.getElementById('auth-email').value;
+    const name = document.getElementById('auth-name').value || email.split('@')[0];
+    if(!email) return alert("Email required.");
+    
+    State.currentUser = { name, email };
+    localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
+    
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('user-display-name').innerText = name;
+}
+
+function handleSignout() {
+    localStorage.removeItem('lex_user');
+    location.reload();
+}
+
+/* ═══════════════════════════════════════════
+   2. CONVERSATIONAL BRAIN
+═══════════════════════════════════════════ */
+
+const LexBrain = {
     think: function(query, isDeep) {
         const input = query.toLowerCase().trim();
         
-        // 1. REACTION LOGIC: Is the user answering Lex's previous question?
-        if (this.lastAction === 'asked_status') {
-            this.lastAction = 'replied_social';
-            return this.handleFeedback(input);
+        // Social Threading
+        if (State.lastAiAction === 'asked_status') {
+            State.lastAiAction = 'social';
+            return this.handleSocialFollowup(input);
         }
 
-        // 2. SOCIAL DETECTION
-        if (this.isSocial(input)) {
+        if (this.isSmallTalk(input)) {
             if (input.includes('how are you')) {
-                this.lastAction = 'asked_status';
-                return "I'm doing great, honestly. Just keeping the gears turning. How are things on your end?";
+                State.lastAiAction = 'asked_status';
+                return "I'm doing great, honestly. Just keeping the gears turning. How's your day going?";
             }
-            return this.handleSocial(input);
+            return "Hey! I'm here. What can we tackle today?";
         }
 
-        // 3. TASK DETECTION: If it's not social, it's a task.
-        this.lastAction = 'task';
+        // Strategy/Work
+        State.lastAiAction = 'working';
         return this.handleTask(query, isDeep);
     },
 
-    isSocial: function(input) {
-        const socialKeys = ['hi', 'hello', 'hey', 'good', 'fine', 'thanks', 'cool', 'ok', 'wow', 'interesting'];
-        // Short sentences (under 4 words) are usually social/feedback
-        return input.split(' ').length < 4 || socialKeys.some(k => input.includes(k));
+    isSmallTalk: function(input) {
+        return input.length < 15 || ['hi', 'hello', 'hey', 'good', 'thanks', 'cool'].some(k => input.includes(k));
     },
 
-    handleFeedback: function(input) {
-        // This handles "i am good too", "doing well", etc.
-        const positive = ['good', 'great', 'well', 'fine', 'okay', 'excellent'];
-        const negative = ['bad', 'tired', 'stressed', 'busy'];
-
-        if (positive.some(word => input.includes(word))) {
-            return "Glad to hear that. It’s always better to tackle the day from a good head-space. What are we focusing on today?";
+    handleSocialFollowup: function(input) {
+        if (['good', 'great', 'well', 'fine'].some(w => input.includes(w))) {
+            return "Glad to hear that. It's always better to start from a clear headspace. Ready to dive into work?";
         }
-        if (negative.some(word => input.includes(word))) {
-            return "Sorry to hear that. Sometimes the load gets heavy. Anything I can take off your plate, or do you just want to talk through the chaos?";
-        }
-        return "Understood. I'm here when you're ready to dive into the heavy lifting. What's the move?";
-    },
-
-    handleSocial: function(input) {
-        if (input.match(/^(hi|hello|hey|whats up)/)) {
-            return "Hey. I was just syncing some data. What can I do for you?";
-        }
-        if (input.match(/^(thanks|thank you|thx)/)) {
-            return "Of course. That's what I'm here for.";
-        }
-        return "Got it. Let me know if you want to dive into something specific or if you need me to look at a file.";
+        return "Understood. I'm here when you're ready to get down to business.";
     },
 
     handleTask: function(query, isDeep) {
-        // Professional logic ONLY triggers when there is a real request
-        const queryLower = query.toLowerCase();
-        
-        let response = "";
-        
-        if (isDeep) {
-            response = "I've run a deep-scan on that. ";
-        }
-
-        if (queryLower.includes('contract') || queryLower.includes('nda') || queryLower.includes('legal')) {
-            response += "Looking at the legal implications here, the main friction point is usually the liability cap. We should ensure it's balanced against the total contract value.";
-        } else if (queryLower.includes('business') || queryLower.includes('strategy') || queryLower.includes('market')) {
-            response += "Strategically, the move here depends on your risk tolerance. If you want growth, we scale; if you want safety, we optimize the current margins.";
+        const q = query.toLowerCase();
+        let res = "";
+        if (q.includes('legal') || q.includes('contract') || q.includes('nda')) {
+            res = "Analyzing the legal framework... The core risk here is usually the liability cap. We should ensure it scales reasonably with the contract value.";
         } else {
-            // General intelligent response that isn't "Solid point"
-            response += "That’s an interesting angle. Usually, when people bring this up, they're looking for a way to streamline the process without losing quality. Is that what you're aiming for?";
+            res = "That's an interesting strategy. From an executive perspective, I'd focus on how this impacts your scalability. What's your immediate goal?";
         }
-
-        return response;
+        if (isDeep) res += "\n\nDeep analysis suggests a 12% risk variance we haven't accounted for yet.";
+        return res;
     }
 };
+
+/* ═══════════════════════════════════════════
+   3. UI CONTROLS
+═══════════════════════════════════════════ */
+
+function processMessage() {
+    const input = document.getElementById('user-query');
+    const query = input.value.trim();
+    if (!query) return;
+
+    document.getElementById('welcome-screen').classList.add('hidden');
+    const chatBox = document.getElementById('chat-messages');
+    chatBox.classList.remove('hidden');
+
+    appendBubble('user', query);
+    input.value = '';
+    input.style.height = 'auto';
+
+    const isDeep = document.getElementById('think-toggle').checked;
+    const typingId = appendTypingIndicator();
+    
+    setTimeout(() => {
+        document.getElementById(typingId)?.remove();
+        const response = LexBrain.think(query, isDeep);
+        streamText(response);
+    }, 600);
+}
+
+function streamText(fullText) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'flex justify-start';
+    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base"><p id="streaming-p" class="text-zinc-200 typing-cursor"></p></div>`;
+    box.appendChild(div);
+    const p = document.getElementById('streaming-p');
+    let i = 0;
+    const interval = setInterval(() => {
+        p.innerText += fullText[i];
+        i++;
+        if (i >= fullText.length) { clearInterval(interval); p.classList.remove('typing-cursor'); p.id = ""; }
+        box.scrollTop = box.scrollHeight;
+    }, 15);
+}
+
+function appendBubble(role, text) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+    div.innerHTML = `<div class="max-w-[85%] ${role === 'user' ? 'user-bubble p-4 text-sm' : 'ai-bubble p-6 text-base'}"><p>${text}</p></div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function appendTypingIndicator() {
+    const id = 'typing-' + Date.now();
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.id = id;
+    div.innerHTML = `<div class="flex justify-start"><div class="ai-bubble px-6 py-3 text-xs text-zinc-500 italic animate-pulse">Lex is thinking...</div></div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return id;
+}
+
+function triggerFileUpload() { document.getElementById('hidden-file-input').click(); }
+function handleFileSelect(e) { if(e.target.files[0]) appendBubble('ai', `File received: **${e.target.files[0].name}**. I'm scanning it now.`); }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function handleInputKeydown(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); processMessage(); } }
+function startNewChat() { location.reload(); }
+
+window.onload = () => {
+    const saved = localStorage.getItem('lex_user');
+    if(saved) {
+        State.currentUser = JSON.parse(saved);
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('user-display-name').innerText = State.currentUser.name;
+    }
+}
