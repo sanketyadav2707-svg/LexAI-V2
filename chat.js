@@ -3,41 +3,32 @@
 const State = {
     currentUser: null,
     lastAiAction: null,
-    authMode: 'login'
+    isProcessing: false
 };
 
 /* ═══════════════════════════════════════════
-   1. AUTHENTICATION & UI FIXES
+   1. AUTHENTICATION & UI
 ═══════════════════════════════════════════ */
 
 function setAuthMode(mode) {
-    State.authMode = mode;
     const signupFields = document.getElementById('signup-fields');
     const loginTab = document.getElementById('login-tab');
     const signupTab = document.getElementById('signup-tab');
-    const continueBtn = document.getElementById('auth-continue-btn');
 
     if (mode === 'signup') {
         signupFields.classList.remove('hidden');
-        setTimeout(() => {
-            signupFields.style.opacity = '1';
-            signupFields.style.transform = 'translateY(0)';
-        }, 10);
         signupTab.classList.add('active-tab');
-        signupTab.style.color = "#FFF";
         loginTab.classList.remove('active-tab');
-        loginTab.style.color = "#71717a"; // zinc-500
-        continueBtn.innerText = "Create Account";
     } else {
-        signupFields.style.opacity = '0';
-        signupFields.style.transform = 'translateY(8px)';
-        setTimeout(() => signupFields.classList.add('hidden'), 300);
+        signupFields.classList.add('hidden');
         loginTab.classList.add('active-tab');
-        loginTab.style.color = "#FFF";
         signupTab.classList.remove('active-tab');
-        signupTab.style.color = "#71717a";
-        continueBtn.innerText = "Continue";
     }
+}
+
+function togglePass() {
+    const p = document.getElementById('auth-pass');
+    p.type = p.type === 'password' ? 'text' : 'password';
 }
 
 function submitAuth() {
@@ -45,11 +36,10 @@ function submitAuth() {
     const name = document.getElementById('auth-name').value || email.split('@')[0];
     const logo = document.getElementById('auth-logo');
 
-    if(!email || email.length < 5) return alert("Valid email required.");
+    if(!email) return alert("Email required.");
 
-    // SUCCESS ANIMATION
     logo.classList.add('logo-animate');
-    
+
     setTimeout(() => {
         State.currentUser = { name, email };
         localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
@@ -58,77 +48,67 @@ function submitAuth() {
     }, 600);
 }
 
-function togglePass() {
-    const p = document.getElementById('auth-pass');
-    p.type = p.type === 'password' ? 'text' : 'password';
+function handleSignout() {
+    localStorage.removeItem('lex_user');
+    location.reload();
 }
 
 /* ═══════════════════════════════════════════
-   2. THE IMPROVED BRAIN (SUBJECT AWARENESS)
+   2. THE ARTIFICIAL BRAIN
 ═══════════════════════════════════════════ */
 
 const LexBrain = {
     think: function(query, isDeep) {
         const input = query.toLowerCase().trim();
-        
-        // Critical Performance Check
-        if (input.includes('dumb') || input.includes('asshole') || input.includes('shitty')) {
-            return "I apologize. I got stuck in a repetitive loop. I've cleared that logic path. Let's restart: What specifically can I help you with right now?";
+
+        if (input.includes('dumb') || input.includes('asshole') || input.includes('bad')) {
+            return "I apologize. My previous responses were repetitive. I've updated my context—what specifically can I help you with right now?";
         }
 
-        // Contextual Awareness
-        if (input.includes('consultant') || input.includes('consulting')) {
-            return "Consulting is about providing that high-level objective lens. Whether you're navigating a restructure or a digital transformation, the goal is clarity. Are we looking at a specific firm or a strategy?";
+        if (State.lastAiAction === 'asked_status' && input.length < 20) {
+            State.lastAiAction = 'social';
+            return input.includes('good') || input.includes('well') ? 
+                "Great to hear. Let's keep that momentum. What are we tackling today?" : 
+                "Understood. I'm here when you're ready to dive into the work.";
+        }
+
+        if (input.includes('how are you')) {
+            State.lastAiAction = 'asked_status';
+            return "I'm doing excellent. Feeling very high-bandwidth today. How is your day going?";
+        }
+
+        if (input.includes('consultant')) {
+            return "Consulting is about clarity. You're bringing in an outside lens to solve problems the internal team is too close to. Is this for a specific firm or a strategy shift?";
         }
 
         if (input.includes('1000 page') || input.includes('summary')) {
-            return "Summarizing 1,000 pages isn't just about shortening text—it's about finding the needle in the haystack. If you upload it, I'll map the KPIs and risks across the whole document. Ready?";
+            return "Summarizing 1,000 pages requires semantic chunking. I can map the core risks and KPIs across the whole file. If you upload it, we can begin.";
         }
 
-        if (this.isSmallTalk(input)) {
-            if (input.includes('how are you')) {
-                State.lastAiAction = 'asked_status';
-                return "I'm doing great. Much better now that we're talking. How is your day going?";
-            }
-            return "Hey. I'm here. What's on the agenda?";
-        }
-
-        // Dynamic Feedback
-        if (State.lastAiAction === 'asked_status' && input.length < 15) {
-            State.lastAiAction = 'social';
-            return "Glad to hear that. A clear mind makes for better strategy. What are we tackling first?";
-        }
-
-        return this.handleTask(input, isDeep);
-    },
-
-    isSmallTalk: function(input) {
-        return input.length < 12 || ['hi', 'hello', 'hey', 'good', 'fine'].some(k => input.includes(k));
-    },
-
-    handleTask: function(input, isDeep) {
-        // Prevent repeating "Scalability"
-        const strategyLines = [
-            "This moves us into a competitive territory. We need to look at the resource overhead vs the payoff.",
-            "That's a bold move. Usually, the risk here lies in the execution speed. How fast can we pivot if this fails?",
-            "I'm seeing a potential for high leverage here. We should focus on the one metric that defines success for this."
+        State.lastAiAction = 'working';
+        const tasks = [
+            "Strategically, this looks like a leverage play. Are we optimizing for speed or for safety?",
+            "That's a bold direction. The main risk here is execution friction. How fast can the team pivot?",
+            "I'm seeing a high-leverage opportunity here. Let's focus on the one metric that actually defines success."
         ];
-        
-        let res = strategyLines[Math.floor(Math.random() * strategyLines.length)];
-        if (isDeep) res += "\n\nDeep Thinking: My analysis of current market patterns suggests a 15% efficiency gap we could exploit here.";
+        let res = tasks[Math.floor(Math.random() * tasks.length)];
+        if (isDeep) res += "\n\nDeep thinking: My analysis suggests a hidden 12% risk variance in similar market cases.";
         return res;
     }
 };
 
 /* ═══════════════════════════════════════════
-   3. UI MESSAGING PIPELINE
+   3. MESSAGE PROCESSING (THE CORE)
 ═══════════════════════════════════════════ */
 
 function processMessage() {
+    if (State.isProcessing) return;
+    
     const input = document.getElementById('user-query');
     const query = input.value.trim();
     if (!query) return;
 
+    State.isProcessing = true;
     document.getElementById('welcome-screen').classList.add('hidden');
     const chatBox = document.getElementById('chat-messages');
     chatBox.classList.remove('hidden');
@@ -144,7 +124,65 @@ function processMessage() {
         document.getElementById(typingId)?.remove();
         const response = LexBrain.think(query, isDeep);
         streamText(response);
+        State.isProcessing = false;
     }, 600);
 }
 
-// Ensure your existing streamText, appendBubble, and appendTypingIndicator functions are below this point
+function streamText(fullText) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'flex justify-start';
+    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base"><p id="streaming-p" class="text-zinc-200 typing-cursor"></p></div>`;
+    box.appendChild(div);
+    const p = document.getElementById('streaming-p');
+    let i = 0;
+    const interval = setInterval(() => {
+        p.innerText += fullText[i];
+        i++;
+        if (i >= fullText.length) { 
+            clearInterval(interval); 
+            p.classList.remove('typing-cursor'); 
+            p.id = ""; 
+        }
+        box.scrollTop = box.scrollHeight;
+    }, 15);
+}
+
+function appendBubble(role, text) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+    div.innerHTML = `<div class="max-w-[85%] ${role === 'user' ? 'user-bubble p-4 text-sm' : 'ai-bubble p-6 text-base'}"><p>${text}</p></div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function appendTypingIndicator() {
+    const id = 'typing-' + Date.now();
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.id = id;
+    div.innerHTML = `<div class="flex justify-start"><div class="ai-bubble px-6 py-3 text-xs text-zinc-500 italic animate-pulse">Lex is thinking...</div></div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return id;
+}
+
+/* ═══════════════════════════════════════════
+   4. UTILS
+═══════════════════════════════════════════ */
+
+function triggerFileUpload() { document.getElementById('hidden-file-input').click(); }
+function handleFileSelect(e) { if(e.target.files[0]) appendBubble('ai', `Received: **${e.target.files[0].name}**. Scanning contents now.`); }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function handleInputKeydown(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); processMessage(); } }
+function startNewChat() { location.reload(); }
+
+window.onload = () => {
+    const saved = localStorage.getItem('lex_user');
+    if(saved) {
+        State.currentUser = JSON.parse(saved);
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('user-display-name').innerText = State.currentUser.name;
+    }
+}
