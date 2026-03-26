@@ -36,29 +36,40 @@
 <body class="flex h-screen">
 
 <!-- ── AUTH SCREEN ── -->
+<!-- ── AUTH SCREEN ── -->
 <div id="auth-screen">
     <div class="auth-card">
         <div class="text-center mb-8">
-            <h1 id="auth-logo" class="text-3xl font-bold tracking-tighter italic text-white">LexAI</h1>
+            <!-- Logo with Animation -->
+            <h1 id="auth-logo" class="text-3xl font-bold tracking-tighter italic text-white transition-all">LexAI</h1>
+            
             <div class="flex justify-center gap-10 mt-8 border-b border-zinc-900">
+                <!-- TABS: Login & Sign Up are now clearly visible -->
                 <button type="button" onclick="setAuthMode('login')" id="login-tab" class="active-tab py-2 text-sm font-semibold text-white transition-all">Login</button>
                 <button type="button" onclick="setAuthMode('signup')" id="signup-tab" class="py-2 text-sm font-semibold text-zinc-500 transition-all hover:text-white">Sign Up</button>
             </div>
         </div>
+
         <div class="space-y-4">
+            <!-- Name field: Hidden by default, shows with animation during Signup -->
             <div id="signup-fields" class="hidden">
-                <input id="auth-name" type="text" placeholder="Your Name" class="w-full rounded-xl p-3.5 text-sm animate-slide-up">
+                <input id="auth-name" type="text" placeholder="Your Name" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-sm text-white outline-none animate-slide-up focus:border-zinc-500">
             </div>
-            <input id="auth-email" type="email" placeholder="Email Address" class="w-full rounded-xl p-3.5 text-sm">
+            
+            <input id="auth-email" type="email" placeholder="Email Address" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-sm text-white outline-none focus:border-zinc-500">
+            
             <div class="relative">
-                <input id="auth-pass" type="password" placeholder="Password" class="w-full rounded-xl p-3.5 text-sm">
-                <button type="button" onclick="togglePass()" class="absolute right-4 top-3.5 text-zinc-500 hover:text-white">👁️</button>
+                <input id="auth-pass" type="password" placeholder="Password" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-sm text-white outline-none focus:border-zinc-500">
+                <button type="button" onclick="togglePass()" class="absolute right-4 top-3.5 text-zinc-500 hover:text-white transition-colors">👁️</button>
             </div>
-            <button type="button" onclick="submitAuth()" class="w-full bg-white text-black font-bold py-4 rounded-xl mt-4 hover:bg-zinc-200 transition-all active:scale-95">Continue</button>
+
+            <!-- Animated Action Button -->
+            <button type="button" onclick="submitAuth()" class="w-full bg-white text-black font-bold py-4 rounded-xl mt-4 hover:bg-zinc-200 transition-all active:scale-95 shadow-lg">
+                Continue
+            </button>
         </div>
     </div>
 </div>
-
 <!-- ── SIDEBAR ── -->
 <aside class="sidebar w-64 flex flex-col hidden md:flex">
     <div class="p-5">
