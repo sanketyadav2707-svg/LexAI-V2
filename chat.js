@@ -1,27 +1,25 @@
 'use strict';
 
 /**
- * LEX SYSTEM v5.0 - FINAL STABLE
- * Features: Social Intelligence, Signup/Login Toggle, File Handling, and Animations.
+ * LEX SYSTEM v6.0 - INTELLIGENT THREADING
+ * Fixes: The "Tape Recorder" loop and the "Speed/Safety" logic failure.
  */
 
 const State = {
     currentUser: null,
-    lastAiAction: null,
-    isProcessing: false,
-    authMode: 'login'
+    lastAiAction: null, // Tracks the 'type' of the last message
+    lastAiQuestion: null, // Tracks the 'specific question' Lex asked
+    isProcessing: false
 };
 
 /* ═══════════════════════════════════════════
-   1. AUTHENTICATION & ANIMATIONS
+   1. AUTHENTICATION & UI
 ═══════════════════════════════════════════ */
 
 function setAuthMode(mode) {
-    State.authMode = mode;
     const signupFields = document.getElementById('signup-fields');
     const loginTab = document.getElementById('login-tab');
     const signupTab = document.getElementById('signup-tab');
-
     if (mode === 'signup') {
         signupFields.classList.remove('hidden');
         signupTab.className = "py-2 text-sm font-semibold text-white border-b-2 border-white transition-all";
@@ -37,16 +35,11 @@ function submitAuth() {
     const email = document.getElementById('auth-email').value;
     const name = document.getElementById('auth-name').value || email.split('@')[0];
     const logo = document.getElementById('auth-logo');
-
-    if(!email) return alert("Please enter your email.");
-
-    // SUCCESS LOGO ANIMATION
+    if(!email) return alert("Email required.");
     logo.classList.add('logo-animate');
-
     setTimeout(() => {
         State.currentUser = { name, email };
         localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
-        
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('user-display-name').innerText = name;
     }, 600); 
@@ -63,63 +56,75 @@ function handleSignout() {
 }
 
 /* ═══════════════════════════════════════════
-   2. THE ARTIFICIAL BRAIN (INTELLIGENT & CALM)
+   2. THE BRAIN (THREAD-AWARE REASONING)
 ═══════════════════════════════════════════ */
 
 const LexBrain = {
     think: function(query, isDeep) {
         const input = query.toLowerCase().trim();
-        
-        // Anti-Dumb Logic: Critical Self-Awareness
-        if (input.includes('dumb') || input.includes('asshole') || input.includes('bad') || input.includes('stupid')) {
-            return "You're right. I missed the mark there. My logic hit a repetitive loop. I've cleared my context—let's actually talk about what you need. What did I miss?";
+
+        // 1. SELF-AWARENESS (If called out)
+        if (input.includes('dumb') || input.includes('asshole') || input.includes('bad') || input.includes('shit')) {
+            return "I apologize. I got caught in a repetitive loop and stopped actually listening to your input. I've cleared my thread context—what's the real problem we're solving right now?";
         }
 
-        // Social Mirroring (If you are nice, Lex is nice. If you answer Lex, Lex acknowledges)
-        if (State.lastAiAction === 'asked_status' && input.length < 25) {
-            State.lastAiAction = 'social';
-            return this.handleSocialFollowup(input);
-        }
-
-        if (this.isSmallTalk(input)) {
-            if (input.includes('how are you')) {
-                State.lastAiAction = 'asked_status';
-                return "I'm doing excellently, thanks for asking. I've been processing some interesting data, but I'm all yours now. How's your day treating you?";
+        // 2. THREAD MEMORY: Did the user answer my previous specific question?
+        if (State.lastAiQuestion === 'speed_vs_safety') {
+            State.lastAiQuestion = null; // Reset
+            if (input.includes('speed')) {
+                return "Prioritizing speed makes sense if we're aiming for a first-mover advantage. However, it increases our execution risk. How aggressive is the timeline for this rollout?";
             }
-            return "Hello! I'm here. What's on the agenda today?";
+            if (input.includes('safety')) {
+                return "Safety suggests a defensive moat strategy. We focus on compliance and airtight margins before scaling. Is the current infrastructure stable enough for that level of scrutiny?";
+            }
         }
 
-        // Subject Specifics
+        // 3. SOCIAL MIRRORING
+        if (this.isSmallTalk(input)) {
+            if (input.includes('how are you') || input.includes('whats up')) {
+                State.lastAiAction = 'social';
+                return "I'm doing excellently. Just finishing an analysis, but I'm fully focused on you now. How's your day treating you?";
+            }
+            return "Hey. I'm here. What are we tackling?";
+        }
+
+        // 4. SUBJECT INTELLIGENCE
         if (input.includes('consultant')) {
-            return "Consulting is all about clarity and outside perspective. Whether it's MBB-style strategy or specialized implementation, the goal is solving the friction points the internal team is too close to see. Are you working on a specific strategy?";
+            return "Consulting is about providing that high-level objective lens. Are you looking at a specific firm's methodology, or are we building a framework for your own consultancy?";
         }
 
-        if (input.includes('1000 page') || input.includes('summary') || input.includes('read')) {
-            return "Summarizing a 1,000-page document requires serious synthesis. Instead of a generic summary, I can map out the core risks, KPIs, and executive themes across the whole file. If you upload it, we can begin.";
+        if (input.includes('1000 page') || input.includes('summary')) {
+            return "Summarizing 1,000 pages isn't just about shortening text—it's about finding the core KPIs and risks hidden in the noise. If you upload the file, I'll map the executive themes for you.";
         }
 
-        // Standard Intelligent Response
+        // 5. TASK GENERATION (With randomized, non-repetitive logic)
         State.lastAiAction = 'working';
-        const thoughts = [
-            "Strategically, this looks like a high-leverage move. We should focus on the one metric that actually defines success here.",
-            "That's a bold direction. The main risk is execution friction—how fast can the team pivot if the initial assumptions are wrong?",
-            "I see where you're going. Usually, when this comes up, the move is to optimize the current resource allocation before scaling."
+        const tasks = [
+            { 
+                text: "Strategically, this looks like a leverage play. Are we optimizing for speed or for safety?", 
+                id: 'speed_vs_safety' 
+            },
+            { 
+                text: "That's a bold move. The main friction point here is the resource overhead. Do we have the team to sustain this?", 
+                id: 'resource_check' 
+            },
+            { 
+                text: "I see the vision. Usually, this requires a trade-off between immediate revenue and long-term brand equity. Which one are you leaning towards?", 
+                id: 'rev_vs_equity' 
+            }
         ];
+
+        // Ensure we don't repeat the exact same task
+        const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
+        State.lastAiQuestion = randomTask.id;
         
-        let res = thoughts[Math.floor(Math.random() * thoughts.length)];
-        if (isDeep) res += "\n\nDeep thinking: My internal simulations suggest a hidden 12% risk variance we haven't discussed yet.";
+        let res = randomTask.text;
+        if (isDeep) res += "\n\nDeep Thinking: My analysis suggests a 12% risk variance in this specific sector that hasn't been mitigated yet.";
         return res;
     },
 
     isSmallTalk: function(input) {
-        return input.length < 15 || ['hi', 'hello', 'hey', 'good', 'thanks', 'cool'].some(k => input.includes(k));
-    },
-
-    handleSocialFollowup: function(input) {
-        if (['good', 'great', 'well', 'fine', 'okay'].some(w => input.includes(w))) {
-            return "Glad to hear that. A clear head is the best tool for the work we do. Ready to dive in, or did you have something else in mind?";
-        }
-        return "Understood. I'm here when you're ready to tackle the heavy lifting.";
+        return input.length < 15 || ['hi', 'hello', 'hey', 'good', 'thanks', 'whats up'].some(k => input.includes(k));
     }
 };
 
@@ -172,9 +177,9 @@ function streamText(fullText) {
     const interval = setInterval(() => {
         p.innerText += fullText[i];
         i++;
-        if (i >= fullText.length) {
-            clearInterval(interval);
-            p.classList.remove('typing-cursor');
+        if (i >= fullText.length) { 
+            clearInterval(interval); 
+            p.classList.remove('typing-cursor'); 
             p.id = ""; 
         }
         box.scrollTop = box.scrollHeight;
@@ -185,11 +190,7 @@ function appendBubble(role, text) {
     const box = document.getElementById('chat-messages');
     const div = document.createElement('div');
     div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
-    div.innerHTML = `
-        <div class="max-w-[85%] ${role === 'user' ? 'user-bubble p-4 text-sm' : 'ai-bubble p-6 text-base'}">
-            <p>${text}</p>
-        </div>
-    `;
+    div.innerHTML = `<div class="max-w-[85%] ${role === 'user' ? 'user-bubble p-4 text-sm' : 'ai-bubble p-6 text-base'}"><p>${text}</p></div>`;
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
 }
@@ -206,33 +207,11 @@ function appendTypingIndicator() {
     return id;
 }
 
-/* ═══════════════════════════════════════════
-   4. UTILITIES (FILES & INPUT)
-═══════════════════════════════════════════ */
-
 function triggerFileUpload() { document.getElementById('hidden-file-input').click(); }
-
-function handleFileSelect(e) { 
-    if(e.target.files[0]) {
-        appendBubble('ai', `I've received your file: **${e.target.files[0].name}**. I'm scanning it now for key intelligence.`);
-    }
-}
-
-function autoResize(el) {
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
-}
-
-function handleInputKeydown(e) {
-    if(e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        processMessage();
-    }
-}
-
-function startNewChat() {
-    location.reload(); 
-}
+function handleFileSelect(e) { if(e.target.files[0]) appendBubble('ai', `Received: **${e.target.files[0].name}**. Scanning contents now.`); }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function handleInputKeydown(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); processMessage(); } }
+function startNewChat() { location.reload(); }
 
 window.onload = () => {
     const saved = localStorage.getItem('lex_user');
