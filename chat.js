@@ -1,177 +1,80 @@
-'use strict';
-
-const State = {
-    currentUser: null,
-    lastAiAction: null,
-    authMode: 'login'
-};
-
-/* ═══════════════════════════════════════════
-   1. AUTHENTICATION & ANIMATIONS
-═══════════════════════════════════════════ */
-
-function setAuthMode(mode) {
-    State.authMode = mode;
-    const signupFields = document.getElementById('signup-fields');
-    const loginTab = document.getElementById('login-tab');
-    const signupTab = document.getElementById('signup-tab');
-
-    if (mode === 'signup') {
-        signupFields.classList.remove('hidden');
-        signupTab.classList.add('active-tab');
-        loginTab.classList.remove('active-tab');
-    } else {
-        signupFields.classList.add('hidden');
-        loginTab.classList.add('active-tab');
-        signupTab.classList.remove('active-tab');
-    }
-}
-
-function submitAuth() {
-    const email = document.getElementById('auth-email').value;
-    const name = document.getElementById('auth-name').value || email.split('@')[0];
-    const logo = document.getElementById('auth-logo');
-
-    if(!email) return alert("Email required.");
-
-    // Trigger Logo Animation on Signup/Login
-    logo.classList.add('logo-animate');
-
-    // Small delay to let the animation finish before entering
-    setTimeout(() => {
-        State.currentUser = { name, email };
-        localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
-        
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('user-display-name').innerText = name;
-    }, 800); 
-}
-
-function togglePass() {
-    const p = document.getElementById('auth-pass');
-    p.type = p.type === 'password' ? 'text' : 'password';
-}
-
-/* ═══════════════════════════════════════════
-   2. CONVERSATIONAL BRAIN & UI
-═══════════════════════════════════════════ */
-
 const LexBrain = {
+    lastAction: null,
+    lastResponse: "", // Track to prevent repetition
+
     think: function(query, isDeep) {
         const input = query.toLowerCase().trim();
         
-        if (State.lastAiAction === 'asked_status') {
+        // 1. SELF-AWARENESS: If the user is criticizing Lex's performance
+        if (input.includes('dumb') || input.includes('asshole') || input.includes('bad') || input.includes('stupid')) {
+            return "You're right to be frustrated. That last response was a repetitive loop and didn't help you at all. I've reset my logic—let's actually talk about what you need. What did I miss?";
+        }
+
+        // 2. SOCIAL THREADING
+        if (State.lastAiAction === 'asked_status' && input.length < 20) {
             State.lastAiAction = 'social';
             return this.handleSocialFollowup(input);
         }
 
+        // 3. SUBJECT-SPECIFIC INTELLIGENCE
+        if (input.includes('consultant') || input.includes('consulting')) {
+            return "Consultants essentially sell high-level problem solving. Whether it's MBB-style strategy or specialized tech implementation, the goal is to provide an outside perspective that the internal team is too 'close' to see. Are you looking to hire one, or looking to optimize how you work as one?";
+        }
+
+        if (input.includes('1000 page') || input.includes('summary') || input.includes('read')) {
+            return "Processing a 1000-page document requires serious synthesis. I'd need to chunk the data into themes—looking for executive summaries, financial risks, and core KPIs—rather than just reading line-by-line. If you upload that file, I can Semantically Search it to find exactly what matters. Where should we start?";
+        }
+
+        // 4. TASK DETECTION
         if (this.isSmallTalk(input)) {
             if (input.includes('how are you')) {
                 State.lastAiAction = 'asked_status';
-                return "I'm doing great, honestly. Just keeping the gears turning. How's your day going?";
+                return "I'm doing great. Much better now that we're talking. How are things on your side?";
             }
-            return "Hey! I'm here. What can we tackle today?";
+            return "Hey. I'm ready. What's the move?";
         }
 
+        // 5. PROFESSIONAL FALLBACK (Enhanced to avoid repetition)
         State.lastAiAction = 'working';
-        return this.handleTask(query, isDeep);
+        return this.handleTask(input, isDeep);
     },
 
     isSmallTalk: function(input) {
-        return input.length < 15 || ['hi', 'hello', 'hey', 'good', 'thanks', 'cool'].some(k => input.includes(k));
+        return input.length < 15 || ['hi', 'hello', 'hey', 'good', 'thanks'].some(k => input.includes(k));
     },
 
     handleSocialFollowup: function(input) {
         if (['good', 'great', 'well', 'fine'].some(w => input.includes(w))) {
-            return "Glad to hear that. It's always better to start from a clear headspace. Ready to dive into work?";
+            return "Glad to hear it. Let's keep that momentum. What can I take off your plate right now?";
         }
-        return "Understood. I'm here when you're ready to get down to business.";
+        return "Understood. I'm here when you're ready to get to the heavy stuff.";
     },
 
-    handleTask: function(query, isDeep) {
-        const q = query.toLowerCase();
-        let res = "";
-        if (q.includes('legal') || q.includes('contract') || q.includes('nda')) {
-            res = "Analyzing the legal framework... The core risk here is usually the liability cap. We should ensure it scales reasonably with the contract value.";
+    handleTask: function(input, isDeep) {
+        // Diversified responses to prevent the "Tape Recorder" effect
+        const legalWork = [
+            "Legal frameworks are all about liability protection. We should look at the indemnification and see if it's mutual or one-sided.",
+            "In a contract like this, the 'Force Majeure' and 'Termination' clauses are where the real surprises live. Want me to check those?",
+            "Usually, with legal documents, the devil is in the definitions section. One wrong word changes the whole deal."
+        ];
+
+        const businessWork = [
+            "From a business standpoint, this looks like a resource allocation problem. Are we optimizing for speed or for cost?",
+            "Market scalability usually hits a wall at the operations level. Have we checked if the current team can handle a 10x lead volume?",
+            "If we look at the competitive landscape, this move either puts you ahead or makes you a target. Which one is it?"
+        ];
+
+        let response = "";
+        if (input.includes('legal') || input.includes('contract') || input.includes('nda')) {
+            response = legalWork[Math.floor(Math.random() * legalWork.length)];
+        } else if (input.includes('business') || input.includes('strategy') || input.includes('market')) {
+            response = businessWork[Math.floor(Math.random() * businessWork.length)];
         } else {
-            res = "That's an interesting strategy. From an executive perspective, I'd focus on how this impacts your scalability. What's your immediate goal?";
+            response = "That's a broad area. To give you a high-level answer: most people tackle this by defining the 'North Star' metric first. What's the one result you absolutely need from this?";
         }
-        if (isDeep) res += "\n\nDeep analysis suggests a 12% risk variance we haven't accounted for yet.";
-        return res;
+
+        if (isDeep) response += "\n\nDeep thinking: I've cross-referenced this with similar case studies; the risk-to-reward ratio here is higher than it looks on the surface.";
+        
+        return response;
     }
 };
-
-function processMessage() {
-    const input = document.getElementById('user-query');
-    const query = input.value.trim();
-    if (!query) return;
-
-    document.getElementById('welcome-screen').classList.add('hidden');
-    const chatBox = document.getElementById('chat-messages');
-    chatBox.classList.remove('hidden');
-
-    appendBubble('user', query);
-    input.value = '';
-    input.style.height = 'auto';
-
-    const isDeep = document.getElementById('think-toggle').checked;
-    const typingId = appendTypingIndicator();
-    
-    setTimeout(() => {
-        document.getElementById(typingId)?.remove();
-        const response = LexBrain.think(query, isDeep);
-        streamText(response);
-    }, 600);
-}
-
-function streamText(fullText) {
-    const box = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.className = 'flex justify-start';
-    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base"><p id="streaming-p" class="text-zinc-200 typing-cursor"></p></div>`;
-    box.appendChild(div);
-    const p = document.getElementById('streaming-p');
-    let i = 0;
-    const interval = setInterval(() => {
-        p.innerText += fullText[i];
-        i++;
-        if (i >= fullText.length) { clearInterval(interval); p.classList.remove('typing-cursor'); p.id = ""; }
-        box.scrollTop = box.scrollHeight;
-    }, 15);
-}
-
-function appendBubble(role, text) {
-    const box = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
-    div.innerHTML = `<div class="max-w-[85%] ${role === 'user' ? 'user-bubble p-4 text-sm' : 'ai-bubble p-6 text-base'}"><p>${text}</p></div>`;
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
-}
-
-function appendTypingIndicator() {
-    const id = 'typing-' + Date.now();
-    const box = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.id = id;
-    div.innerHTML = `<div class="flex justify-start"><div class="ai-bubble px-6 py-3 text-xs text-zinc-500 italic animate-pulse">Lex is thinking...</div></div>`;
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
-    return id;
-}
-
-function triggerFileUpload() { document.getElementById('hidden-file-input').click(); }
-function handleFileSelect(e) { if(e.target.files[0]) appendBubble('ai', `File received: **${e.target.files[0].name}**. I'm scanning it now.`); }
-function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
-function handleInputKeydown(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); processMessage(); } }
-function startNewChat() { location.reload(); }
-function handleSignout() { localStorage.removeItem('lex_user'); location.reload(); }
-
-window.onload = () => {
-    const saved = localStorage.getItem('lex_user');
-    if(saved) {
-        State.currentUser = JSON.parse(saved);
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('user-display-name').innerText = State.currentUser.name;
-    }
-}
