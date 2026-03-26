@@ -1,99 +1,113 @@
 'use strict';
 
 /**
- * LEX ARTIFICIAL BRAIN v2.1
- * Logic: Neural-Simulated Reasoning (NSR)
- * Purpose: Eliminate repetitive "tape recorder" responses.
+ * LEX CONVERSATIONAL BRAIN v3.0
+ * Features: Social Intelligence, Mirroring, and File Handling
  */
 
 const LexBrain = {
-    persona: "Lex — Your Executive Companion",
-    
-    // The "Brain" processes the prompt here
+    // This function decides if the AI should be a friend or a consultant
     think: function(query, isDeep) {
-        const input = query.toLowerCase();
-        let intent = this.classifyIntent(input);
-        let subjects = this.extractSubjects(input);
+        const input = query.toLowerCase().trim();
         
-        return this.synthesizeResponse(intent, subjects, query, isDeep);
+        // 1. Social Intelligence Layer (The "Human" side)
+        if (this.isSmallTalk(input)) {
+            return this.handleSocial(input);
+        }
+
+        // 2. Analytical Intelligence Layer (The "Professional" side)
+        return this.handleAnalysis(input, isDeep);
     },
 
-    // Step 1: Identify what the user wants (Personal, Professional, or Social)
-    classifyIntent: function(input) {
-        if (input.includes("how") || input.includes("who") || input.includes("what")) return "inquiry";
-        if (input.includes("help") || input.includes("fix") || input.includes("problem")) return "solution_seeking";
-        if (input.includes("feel") || input.includes("sad") || input.includes("happy") || input.includes("stressed")) return "emotional";
-        if (input.includes("hi") || input.includes("hello") || input.includes("hey")) return "greeting";
-        return "general_conversation";
+    isSmallTalk: function(input) {
+        const socialCues = ['hi', 'hello', 'hey', 'how are you', 'whats up', 'who are you', 'good morning', 'good afternoon', 'thanks', 'thank you'];
+        return socialCues.some(cue => input.startsWith(cue) || input === cue);
     },
 
-    // Step 2: Extract specific keywords from the user's prompt to be relevant
-    extractSubjects: function(input) {
-        const ignoreList = ["the", "a", "is", "can", "you", "help", "me", "with", "my"];
-        return input.split(' ').filter(word => word.length > 3 && !ignoreList.includes(word));
-    },
-
-    // Step 3: Construct a unique, non-repetitive response
-    synthesizeResponse: function(intent, subjects, rawQuery, isDeep) {
-        const subjectContext = subjects.length > 0 ? subjects.join(', ') : "this specific matter";
-        
-        // Response Components
-        const openings = {
-            greeting: ["Hello there.", "It is good to see you again.", "I was just finalizing some data, but I'm all yours now."],
-            emotional: ["I hear you, and I'm listening.", "Your well-being is a priority here.", "That sounds like a lot to carry."],
-            solution_seeking: ["Let's solve this together.", "Strategy is key here.", "I'm looking at the variables now."],
-            inquiry: ["That is a nuanced question.", "Let me pull the relevant context for that.", "Excellent question."],
-            general_conversation: ["I appreciate you bringing this up.", "That's a fascinating angle.", "Let's explore that."]
+    handleSocial: function(input) {
+        const responses = {
+            greetings: [
+                "Hey! Good to see you. What's on your mind today?",
+                "Hello! I was just waiting for you to drop by. How can I help?",
+                "Hi there! Ready to dive into some work, or just checking in?"
+            ],
+            status: [
+                "I'm doing great! Just processing a world of info and staying sharp. How are things with you?",
+                "I'm excellent. Feeling very 'high-bandwidth' today. How are you holding up?",
+                "Doing well, thanks for asking! Life in the cloud is pretty smooth. What about you?"
+            ],
+            appreciation: [
+                "You're very welcome!",
+                "Anytime. I've got your back.",
+                "Glad I could help. What's next on the agenda?"
+            ]
         };
 
-        const middle = {
-            greeting: [`How can I assist you with your professional or personal goals today?`],
-            emotional: [`Feeling like this about ${subjectContext} is understandable. Do you want to dive deeper into why, or shall we look for a distraction?`],
-            solution_seeking: [`Regarding ${subjectContext}, we need to look at the immediate impact versus long-term stability. What is your primary concern?`],
-            inquiry: [`Analyzing ${subjectContext} requires a multi-layered approach. ${isDeep ? 'My deep-thinking modules suggest three potential outcomes.' : 'On the surface, it seems straightforward, but let us look closer.'}`],
-            general_conversation: [`When you mention ${subjectContext}, it reminds me that every decision in this field has a ripple effect. What's your next move?`]
-        };
+        if (input.includes('how are you') || input.includes('whats up')) 
+            return responses.status[Math.floor(Math.random() * responses.status.length)];
+        
+        if (input.includes('thanks') || input.includes('thank you'))
+            return responses.appreciation[Math.floor(Math.random() * responses.appreciation.length)];
 
-        const deepLayers = [
-            "Furthermore, my internal simulations suggest a 15% margin of risk we haven't discussed yet.",
-            "I've also cross-referenced this with global market sentiment; the outlook is shifting.",
-            "Interestingly, a similar precedent occurred in 2022 that might apply to your current situation."
+        return responses.greetings[Math.floor(Math.random() * responses.greetings.length)];
+    },
+
+    handleAnalysis: function(input, isDeep) {
+        // More human-like professional responses (no "nuanced approach" nonsense)
+        const openings = [
+            "That's a solid point. Let's look at it this way:",
+            "I see where you're going with this. Here's my take:",
+            "Got it. Let's break this down strategically.",
+            "Interesting. If we're looking at this from a high-level perspective..."
         ];
 
-        // Assembly
-        let part1 = openings[intent][Math.floor(Math.random() * openings[intent].length)];
-        let part2 = middle[intent][Math.floor(Math.random() * middle[intent].length)];
-        let part3 = isDeep ? deepLayers[Math.floor(Math.random() * deepLayers.length)] : "";
+        const thoughts = [
+            "Essentially, we need to balance the immediate risk with the long-term payoff.",
+            "The data suggests that most people in your position prioritize efficiency here.",
+            "It really comes down to how much leverage you want to maintain in this situation."
+        ];
 
-        return `${part1} ${part2} ${part3}`;
+        const deepLayers = [
+            "\n\nDigging deeper, I've noticed a pattern in similar cases that suggests a hidden opportunity here.",
+            "\n\nIf we push the logic further, we might actually see a shift in the outcome by next quarter.",
+            "\n\nI've also run a quick simulation on the variables you mentioned; it's looking promising but needs caution."
+        ];
+
+        let res = openings[Math.floor(Math.random() * openings.length)] + " " + 
+                  thoughts[Math.floor(Math.random() * thoughts.length)];
+        
+        if (isDeep) res += deepLayers[Math.floor(Math.random() * deepLayers.length)];
+        
+        return res;
     }
 };
 
 /* ═══════════════════════════════════════════
-   CORE UI & FLOW (MAINTAINING YOUR UI)
+   FILE ATTACHMENT SYSTEM
+═══════════════════════════════════════════ */
+
+function triggerFileUpload() {
+    document.getElementById('hidden-file-input').click();
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // Show a temporary message in the chat
+        appendBubble('ai', `I've received your file: **${file.name}**. I'm scanning the contents now...`);
+    }
+}
+
+/* ═══════════════════════════════════════════
+   CORE UI FLOW (FIXED & POLISHED)
 ═══════════════════════════════════════════ */
 
 let currentUser = null;
 
-function setAuthMode(mode) {
-    const signupFields = document.getElementById('signup-fields');
-    const loginTab = document.getElementById('login-tab');
-    const signupTab = document.getElementById('signup-tab');
-    if (mode === 'signup') {
-        signupFields.classList.remove('hidden');
-        signupTab.className = "active-tab py-1 text-sm font-semibold";
-        loginTab.className = "py-1 text-sm font-semibold text-zinc-500";
-    } else {
-        signupFields.classList.add('hidden');
-        loginTab.className = "active-tab py-1 text-sm font-semibold";
-        signupTab.className = "py-1 text-sm font-semibold text-zinc-500";
-    }
-}
-
 function submitAuth() {
     const email = document.getElementById('auth-email').value;
     const name = document.getElementById('auth-name').value || email.split('@')[0];
-    if(!email) return alert("Credentials required.");
+    if(!email) return alert("Please enter an email.");
     currentUser = { name, email };
     localStorage.setItem('lex_user', JSON.stringify(currentUser));
     document.getElementById('auth-screen').classList.add('hidden');
@@ -116,26 +130,11 @@ function processMessage() {
     const isDeep = document.getElementById('think-toggle').checked;
     const typingId = appendTypingIndicator();
     
-    // The Brain Starts Working
     setTimeout(() => {
         removeElement(typingId);
-        const brainResponse = LexBrain.think(query, isDeep);
-        streamText(brainResponse);
-    }, isDeep ? 2000 : 800);
-}
-
-// UI HELPER FUNCTIONS
-function appendBubble(role, text) {
-    const box = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
-    div.innerHTML = `
-        <div class="max-w-[80%] ${role === 'user' ? 'user-bubble p-4 text-sm' : 'ai-bubble p-6 text-base'}">
-            <p class="${role === 'ai' ? 'text-zinc-200' : 'text-zinc-300'}">${text}</p>
-        </div>
-    `;
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
+        const response = LexBrain.think(query, isDeep);
+        streamText(response);
+    }, isDeep ? 1500 : 600);
 }
 
 function streamText(fullText) {
@@ -156,7 +155,16 @@ function streamText(fullText) {
             p.id = "";
         }
         box.scrollTop = box.scrollHeight;
-    }, 20);
+    }, 15);
+}
+
+function appendBubble(role, text) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+    div.innerHTML = `<div class="max-w-[80%] ${role === 'user' ? 'user-bubble p-4 text-sm' : 'ai-bubble p-6 text-base'}"><p>${text}</p></div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
 }
 
 function appendTypingIndicator() {
@@ -172,7 +180,13 @@ function appendTypingIndicator() {
 
 function removeElement(id) { document.getElementById(id)?.remove(); }
 function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function handleInputKeydown(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); processMessage(); } }
 function togglePass() { const p = document.getElementById('auth-pass'); p.type = p.type === 'password' ? 'text' : 'password'; }
+function setAuthMode(mode) { 
+    document.getElementById('signup-fields').classList.toggle('hidden', mode === 'login');
+    document.getElementById('login-tab').className = mode === 'login' ? 'active-tab py-1 text-sm font-semibold' : 'py-1 text-sm font-semibold text-zinc-500';
+    document.getElementById('signup-tab').className = mode === 'signup' ? 'active-tab py-1 text-sm font-semibold' : 'py-1 text-sm font-semibold text-zinc-500';
+}
 function handleSignout() { localStorage.removeItem('lex_user'); location.reload(); }
 function startNewChat() { location.reload(); }
 
