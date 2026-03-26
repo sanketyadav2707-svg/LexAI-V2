@@ -1,73 +1,76 @@
 /**
- * LexAI v3.0 - Sovereign Intelligence Engine
- * Features: Heuristic Sentence Construction & Context-Aware Logic
+ * LexAI v4.0 - Sovereign Semantic Engine
+ * Mimics high-level LLM reasoning (Gemini/ChatGPT/Grok style)
  */
 
 const State = {
     userName: "",
     isThinking: false,
     uploadedFile: null,
+    contextHistory: [], // Tracks what we talked about
     history: [
-        { id: 1, title: 'Strategic Review', cat: 'Today' },
-        { id: 2, title: 'Liability Analysis', cat: 'Yesterday' }
+        { id: 1, title: 'Institutional Briefing', cat: 'Today' },
+        { id: 2, title: 'Risk Parameters', cat: 'Yesterday' }
     ]
 };
 
-// --- DYNAMIC INTELLIGENCE ENGINE (The "Brain") ---
+// --- SEMANTIC INTENT ENGINE ---
 const Brain = {
-    // Variety of professional sentence starters
-    openers: [
-        "Analyzing the parameters of your query...",
-        "Cross-referencing global data clusters regarding",
-        "Based on real-time intelligence surrounding",
-        "Evaluating the strategic implications of",
-        "Synthesizing enterprise-grade data points on"
-    ],
-    // Professional conclusions
-    closers: [
-        "This aligns with our high-trust enterprise protocols.",
-        "I recommend further deep-dive analysis into this sector.",
-        "Our sovereign nodes suggest 98% confidence in this assessment.",
-        "Shall I draft a formal brief regarding these findings?",
-        "This is indexed in our high-priority intelligence vault."
-    ],
+    // 1. Personal & Rapport Logic
+    personal: {
+        "how are you": [
+            "I'm operating at peak efficiency. My neural weights are balanced, and I'm ready to dive into some complex legal strategy. How are things on your end?",
+            "Doing excellent. I've just finished indexing several thousand new SEC filings, so my knowledge base is feeling quite sharp. What's on your mind today?",
+            "System status is green across all nodes. I'm ready to assist you with anything from personal queries to high-stakes business logic."
+        ],
+        "who are you": "I am LexAI, a Sovereign Legal Intelligence Node. Unlike standard LLMs, I am fine-tuned for high-stakes enterprise environments where precision is the only metric that matters.",
+        "joke": "A lawyer and a smart-contract walk into a bar. The bartender asks, 'What'll it be?' The lawyer says, 'I'll have a martini, but I'll need a 40-page liability waiver before I sip it.' The smart-contract just executes the drink immediately.",
+    },
 
-    // Generates a unique response based on the user's actual input
-    generateResponse: function(input) {
+    // 2. Professional & Legal Logic
+    professional: {
+        "legal": "In high-stakes litigation, the difference between success and failure often lies in the jurisdictional nuances. My analysis suggests prioritizing the 'Forum Selection' clauses first.",
+        "business": "Scaling an enterprise requires a delicate balance of aggressive growth and rigid risk mitigation. I can help you model the compliance overhead for your next expansion.",
+        "contract": "A 'Zero-Mistake' contract isn't just about the words; it's about the execution. I recommend we look at the indemnification triggers specifically."
+    },
+
+    // 3. The "Deep Logic" Generator (for everything else)
+    generateDeepResponse: function(input) {
         const query = input.toLowerCase();
         
-        // 1. Handle Greetings
-        if (query.match(/(hi|hello|hey|morning|evening)/)) {
-            return `Greetings, ${State.userName}. I am LexAI, your sovereign intelligence node. How can I assist with your legal or business strategy today?`;
-        }
-
-        // 2. Handle Weather/General Queries (With a Legal/Business Twist)
-        if (query.includes("weather")) {
-            return "Analyzing local meteorological data... While conditions vary, from a business perspective, I recommend monitoring how these patterns impact logistics and force majeure clauses in your active contracts.";
-        }
-
-        // 3. Handle File Queries
-        if (State.uploadedFile && (query.includes("file") || query.includes("document"))) {
-            return `Regarding the document "${State.uploadedFile.name}", my 1,000-page scan identifies several critical clauses that directly relate to your question. I suggest prioritizing the 'Risk Mitigation' section on page 412.`;
-        }
-
-        // 4. HEURISTIC ENGINE: Build a unique sentence for anything else
-        // This picks a random opener, echoes the user's topic, and adds a random closer.
-        const opener = this.openers[Math.floor(Math.random() * this.openers.length)];
-        const closer = this.closers[Math.floor(Math.random() * this.closers.length)];
+        // Match Intent
+        if (query.includes("how are you") || query.includes("how's it going")) 
+            return this.personal["how are you"][Math.floor(Math.random() * 3)];
         
-        // Extract a "Subject" (Last few words of the question)
-        const words = input.split(' ');
-        const subject = words.length > 2 ? words.slice(-2).join(' ') : "this matter";
+        if (query.includes("who are you") || query.includes("what are you")) 
+            return this.personal["who are you"];
 
-        return `${opener} "${subject.replace(/[?!.]/g, '')}". ${closer}`;
+        if (query.includes("joke") || query.includes("funny")) 
+            return this.personal["joke"];
+
+        if (query.includes("weather")) 
+            return "Metrological data is currently showing clear skies for your business operations, though I'd keep an eye on the 'economic climate'—inflation indices are looking volatile this quarter.";
+
+        // Document Analysis Mode
+        if (State.uploadedFile && (query.includes("file") || query.includes("this document") || query.includes("read"))) {
+            return `I've analyzed the 1,000+ pages of "${State.uploadedFile.name}". There is a fascinating contradiction between the arbitration clause on page 14 and the termination rights on page 88. Would you like me to draft a reconciliation memo?`;
+        }
+
+        // Generic Professional fallback (High-end "AI Talk")
+        const reflections = [
+            `That's a compelling point regarding ${input.replace('?', '')}. From an institutional perspective, one must consider how that impacts the broader strategic roadmap.`,
+            `I've cross-referenced your question about "${input}" with our internal intelligence vault. The consensus suggests a multi-layered approach involving both risk assessment and proactive capital deployment.`,
+            `Analyzing "${input}"... My neural nodes are picking up a high correlation between your query and several recent market shifts. It's a nuanced topic—shall we break it down into actionable steps?`
+        ];
+        
+        return reflections[Math.floor(Math.random() * reflections.length)];
     }
 };
 
 // --- AUTH & INITIALIZATION ---
 document.getElementById('auth-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    State.userName = document.getElementById('user-name-input').value || "Counsel";
+    State.userName = document.getElementById('user-name-input').value || "User";
     
     document.getElementById('auth-screen').classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
@@ -75,7 +78,6 @@ document.getElementById('auth-form').addEventListener('submit', (e) => {
         document.getElementById('app-ui').classList.remove('hidden');
         setTimeout(() => { document.getElementById('app-ui').classList.replace('opacity-0', 'opacity-100'); }, 50);
         
-        // Setup UI
         const hour = new Date().getHours();
         const greet = hour < 12 ? "Good morning" : (hour < 18 ? "Good afternoon" : "Good evening");
         document.getElementById('welcome-header').innerText = `${greet}, ${State.userName.split(' ')[0]}.`;
@@ -86,7 +88,7 @@ document.getElementById('auth-form').addEventListener('submit', (e) => {
     }, 600);
 });
 
-// --- CHAT CORE LOGIC ---
+// --- CHAT LOGIC ---
 async function handleSendMessage() {
     const text = document.getElementById('chat-input').value.trim();
     if (!text || State.isThinking) return;
@@ -96,19 +98,30 @@ async function handleSendMessage() {
     
     addMessage(text, 'user');
 
-    // 1. Thinking Delay (2-3 seconds)
+    // "Thinking" phase (strictly 2.5 seconds)
     State.isThinking = true;
-    document.getElementById('ai-thinking').classList.remove('hidden');
+    const thinkingBox = document.getElementById('ai-thinking');
+    thinkingBox.classList.remove('hidden');
     
-    await new Promise(r => setTimeout(r, 2000 + Math.random() * 1000)); 
+    // Simulate complex "Agentic" reasoning steps
+    const steps = ["Querying Vector DB...", "Analyzing Intent...", "Synthesizing Prose..."];
+    let stepIdx = 0;
+    const stepInterval = setInterval(() => {
+        thinkingBox.innerHTML = `<span class="flex gap-1"><span class="w-1.5 h-1.5 bg-[#BF953F] rounded-full thinking-dot"></span></span> ${steps[stepIdx]}`;
+        stepIdx = (stepIdx + 1) % steps.length;
+    }, 800);
+
+    await new Promise(r => setTimeout(r, 2500)); 
     
-    document.getElementById('ai-thinking').classList.add('hidden');
+    clearInterval(stepInterval);
+    thinkingBox.classList.add('hidden');
+    thinkingBox.innerHTML = `<span class="flex gap-1"><span class="w-1.5 h-1.5 bg-[#BF953F] rounded-full thinking-dot"></span></span> LexAI is thinking...`;
 
-    // 2. Generate DYNAMIC response
-    const dynamicResponse = Brain.generateResponse(text);
+    // Generate response using Semantic Engine
+    const aiResponse = Brain.generateDeepResponse(text);
 
-    // 3. Stream Response
-    await streamResponse(dynamicResponse);
+    // Stream Response (No Auto-Scroll)
+    await streamResponse(aiResponse);
     State.isThinking = false;
 }
 
@@ -134,7 +147,7 @@ async function streamResponse(fullText) {
     msg.innerHTML = `
         <div class="max-w-[90%] bg-[#0f172a] rounded-2xl px-6 py-6 border border-slate-800 shadow-2xl">
             <div id="${id}" class="text-[15px] leading-relaxed text-slate-300 min-h-[1.5em]"></div>
-            <div class="mt-6 pt-4 border-t border-slate-800 flex gap-4">
+            <div class="mt-6 pt-4 border-t border-slate-800/50 flex gap-4">
                 <button class="text-[10px] uppercase font-bold text-slate-500 hover:text-[#BF953F] transition-colors">Direct-to-Source Citation</button>
                 <button class="text-[10px] uppercase font-bold text-slate-500 hover:text-[#BF953F] transition-colors">HITL Approval</button>
             </div>
@@ -143,14 +156,12 @@ async function streamResponse(fullText) {
     list.appendChild(msg);
 
     const target = document.getElementById(id);
-    
-    // STREAMING LOGIC: NO AUTO-SCROLL as requested
     let i = 0;
     return new Promise(resolve => {
         const interval = setInterval(() => {
             target.innerHTML = fullText.substring(0, i) + '<span class="w-1 h-4 bg-[#BF953F] inline-block ml-1 animate-pulse"></span>';
-            i += 3; // Speed of text
-            if (i >= fullText.length + 3) {
+            i += 2; // Natural reading speed
+            if (i >= fullText.length + 2) {
                 target.innerHTML = fullText;
                 clearInterval(interval);
                 resolve();
@@ -159,7 +170,7 @@ async function streamResponse(fullText) {
     });
 }
 
-// --- FILE UPLOAD (1000+ Page Indexing) ---
+// --- FILE UPLOAD SIMULATION ---
 document.getElementById('file-upload').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -172,44 +183,35 @@ document.getElementById('file-upload').addEventListener('change', async (e) => {
     progressDiv.classList.remove('hidden');
     
     for (let i = 0; i <= 100; i += 2) {
-        await new Promise(r => setTimeout(r, 30));
+        await new Promise(r => setTimeout(r, 40));
         progressBar.style.width = `${i}%`;
         document.getElementById('progress-percent').innerText = `${i}%`;
-        if (i === 20) statusText.innerText = "Initializing OCR for 1,000+ pages...";
-        if (i === 50) statusText.innerText = "Extracting semantic entities...";
-        if (i === 80) statusText.innerText = "Correlating with active precedents...";
+        if (i === 30) statusText.innerText = "Building Semantic Map (1000+ Pages)...";
+        if (i === 70) statusText.innerText = "Indexing Cross-References...";
     }
 
     setTimeout(() => {
         progressDiv.classList.add('hidden');
-        addMessage(`[INTELLIGENCE SYSTEM]: "${file.name}" has been fully ingested into the session memory. I am ready to answer questions based on its contents.`, 'ai');
+        addMessage(`[SYSTEM]: Ingested "${file.name}". Full deep-analysis complete. My logic is now grounded in this data.`, 'ai');
     }, 500);
 });
 
-// --- SIDEBAR HISTORY ---
 function renderHistory() {
     const nav = document.getElementById('history-nav');
     nav.innerHTML = '';
-    const groups = ['Today', 'Yesterday'];
-    groups.forEach(group => {
+    ['Today', 'Yesterday'].forEach(group => {
         const items = State.history.filter(h => h.cat === group);
         const div = document.createElement('div');
         div.innerHTML = `
             <h4 class="text-[10px] uppercase tracking-[0.2em] text-slate-600 font-bold mb-3 px-2">${group}</h4>
             <div class="space-y-1 mb-6">
-                ${items.map(item => `
-                    <div class="p-3 rounded-xl cursor-pointer flex items-center gap-3 hover:bg-slate-900 group transition-all">
-                        <svg class="w-4 h-4 text-slate-700 group-hover:text-[#BF953F]" fill="none" stroke="currentColor" viewBox="2 2 20 20"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-                        <span class="text-sm text-slate-400 group-hover:text-slate-200 truncate">${item.title}</span>
-                    </div>
-                `).join('')}
+                ${items.map(item => `<div class="p-3 rounded-xl cursor-pointer flex items-center gap-3 hover:bg-slate-900 group transition-all text-sm text-slate-400 hover:text-white"><span>#</span> ${item.title}</div>`).join('')}
             </div>
         `;
         nav.appendChild(div);
     });
 }
 
-// Listeners
 document.getElementById('send-btn').addEventListener('click', handleSendMessage);
 document.getElementById('chat-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
