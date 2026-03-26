@@ -1,152 +1,160 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50">
+<html lang="en" class="h-full bg-[#020617]">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LexAI | Enterprise Legal Intelligence</title>
+    <title>LexAI | Sovereign Legal Intelligence</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .gold-gradient { background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C); }
-        .navy-deep { background-color: #0F172A; }
-        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); }
-        @keyframes pulse-gold { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .animate-pulse-gold { animation: pulse-gold 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; }
-        @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; color: #f8fafc; }
+        .dark-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); backdrop-filter: blur(20px); }
+        .gold-glow { box-shadow: 0 0 20px rgba(191, 149, 63, 0.15); }
+        .text-gold { color: #BF953F; }
+        .bg-gold { background: linear-gradient(135deg, #BF953F 0%, #8A6E2F 100%); }
+        .sidebar-item:hover { background: rgba(255, 255, 255, 0.05); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        
+        @keyframes shimmer { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        .thinking-dot { animation: shimmer 1.5s infinite; }
     </style>
 </head>
-<body class="h-full overflow-hidden text-slate-900">
+<body class="h-full overflow-hidden">
 
-    <!-- Auth Overlay -->
-    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 transition-opacity duration-500">
-        <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-2xl border border-slate-200">
+    <!-- Auth System -->
+    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#020617] p-4 transition-all duration-700">
+        <div class="w-full max-w-md p-10 space-y-8 dark-card rounded-3xl gold-glow border-slate-800">
             <div class="text-center">
-                <div class="flex justify-center mb-4">
-                    <!-- Geometric LA Logo -->
-                    <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M50 10V90M20 40L50 30L80 40M20 40C20 55 35 60 35 60M80 40C80 55 65 60 65 60" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
-                        <circle cx="35" cy="70" r="8" stroke="#BF953F" stroke-width="3"/>
-                        <circle cx="65" cy="70" r="8" stroke="#BF953F" stroke-width="3"/>
-                    </svg>
-                </div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">LexAI</h2>
-                <p class="mt-2 text-sm text-slate-500 font-medium tracking-wide uppercase">Billion-Dollar Intelligence</p>
+                <svg class="mx-auto mb-6" width="70" height="70" viewBox="0 0 100 100">
+                    <path d="M50 10 L50 90 M20 40 L50 25 L80 40" stroke="#BF953F" stroke-width="3" fill="none"/>
+                    <path d="M20 40 Q20 65 35 65 M80 40 Q80 65 65 65" stroke="#f8fafc" stroke-width="3" fill="none"/>
+                    <circle cx="35" cy="75" r="5" fill="#BF953F"/>
+                    <circle cx="65" cy="75" r="5" fill="#BF953F"/>
+                </svg>
+                <h2 class="text-4xl font-bold tracking-tighter">LexAI</h2>
+                <p class="text-slate-400 mt-2 text-sm uppercase tracking-[0.2em]">Institutional Intelligence</p>
             </div>
-            <form id="login-form" class="mt-8 space-y-6">
-                <div class="rounded-md shadow-sm -space-y-px">
-                    <input type="email" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-slate-500 focus:border-slate-500 focus:z-10 sm:text-sm" placeholder="Enterprise Email">
-                    <input type="password" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-slate-500 focus:border-slate-500 focus:z-10 sm:text-sm" placeholder="Password">
-                </div>
-                <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white navy-deep hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-all duration-200">
-                    Access Intelligence Vault
+            
+            <form id="auth-form" class="space-y-4">
+                <input type="text" id="user-name-input" required placeholder="Full Name" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-gold-500 transition-all">
+                <input type="email" required placeholder="Corporate Email" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-gold-500 transition-all">
+                <button type="submit" class="w-full bg-gold text-white font-bold py-4 rounded-xl hover:opacity-90 transition-all transform active:scale-95">
+                    Initialize Session
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Main App UI -->
-    <div id="app-ui" class="hidden flex h-full">
+    <!-- Main Workspace -->
+    <div id="app-ui" class="hidden flex h-full opacity-0 transition-opacity duration-1000">
         
-        <!-- Sidebar -->
-        <aside id="sidebar" class="w-80 navy-deep text-slate-300 flex flex-col transition-all duration-300 transform">
-            <div class="p-6 flex items-center justify-between border-b border-slate-800">
-                <div class="flex items-center gap-3">
-                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
-                        <path d="M50 15V85M20 45L50 35L80 45M20 45C20 60 35 65 35 65M80 45C80 60 65 65 65 65" stroke="white" stroke-width="6"/>
-                        <circle cx="35" cy="75" r="6" stroke="#BF953F" stroke-width="4"/>
-                        <circle cx="65" cy="75" r="6" stroke="#BF953F" stroke-width="4"/>
-                    </svg>
-                    <span class="text-xl font-bold text-white tracking-tight">LexAI</span>
-                </div>
-                <button onclick="toggleSidebar()" class="text-slate-500 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
-                </button>
+        <!-- Sidebar: Chat History Only -->
+        <aside id="sidebar" class="w-72 border-r border-slate-800 bg-[#020617] flex flex-col transition-all duration-500">
+            <div class="p-8 flex items-center gap-3">
+                <div class="w-10 h-10 bg-gold rounded-lg flex items-center justify-center font-bold text-white shadow-lg">L</div>
+                <span class="text-xl font-bold tracking-tight">LexAI</span>
             </div>
-
-            <div class="p-4">
-                <button onclick="createNewChat()" class="w-full flex items-center justify-center gap-2 py-2 px-4 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium">
+            
+            <div class="px-4 mb-4">
+                <button onclick="window.location.reload()" class="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-all text-sm font-semibold">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    New Analysis
+                    New Intelligence Brief
                 </button>
             </div>
 
-            <!-- Chat History -->
-            <nav class="flex-1 overflow-y-auto p-4 space-y-6" id="chat-history-container">
-                <!-- Categories injected via JS -->
+            <nav id="history-nav" class="flex-1 overflow-y-auto px-4 space-y-6 pt-4">
+                <!-- History categories (Today, Previous, etc) -->
             </nav>
 
-            <div class="p-4 border-t border-slate-800">
-                <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 cursor-pointer" onclick="handleLogout()">
-                    <div class="w-8 h-8 rounded-full gold-gradient flex items-center justify-center text-slate-900 font-bold text-xs">JD</div>
+            <!-- User Profile -->
+            <div class="p-6 border-t border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div id="user-avatar" class="w-10 h-10 rounded-full bg-gold flex items-center justify-center text-white font-bold text-sm"></div>
                     <div class="flex-1 overflow-hidden">
-                        <p class="text-sm font-medium text-white truncate">John Doe, Esq.</p>
-                        <p class="text-xs text-slate-500 truncate">Gold Tier Member</p>
+                        <p id="display-name" class="text-sm font-semibold truncate"></p>
+                        <p class="text-[10px] text-gold uppercase tracking-widest font-black">Enterprise Node</p>
                     </div>
-                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Workspace -->
-        <main class="flex-1 flex flex-col bg-slate-50 relative">
-            
-            <!-- Workspace Header -->
-            <header class="h-16 border-b border-slate-200 glass-panel sticky top-0 z-10 flex items-center justify-between px-8">
-                <h1 id="current-chat-title" class="text-lg font-semibold text-slate-800">Strategic Portfolio Analysis</h1>
-                <div class="flex gap-4">
-                    <div class="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold border border-green-200">
-                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        SECURE_V4_ENCRYPTED
-                    </div>
+        <main class="flex-1 flex flex-col relative bg-[#020617]">
+            <!-- Header -->
+            <header class="h-20 border-b border-slate-800/50 flex items-center justify-between px-10 backdrop-blur-md sticky top-0 z-20">
+                <div id="greeting-text" class="text-lg font-medium text-slate-300"></div>
+                <div class="flex items-center gap-4">
+                    <span class="text-[10px] bg-slate-900 border border-slate-800 px-3 py-1 rounded-full text-slate-500 font-bold uppercase tracking-widest">Latency: 14ms</span>
                 </div>
             </header>
 
-            <!-- Chat Messages Area -->
-            <div id="chat-window" class="flex-1 overflow-y-auto p-8 space-y-8">
-                <!-- Welcome State -->
-                <div id="welcome-message" class="max-w-2xl mx-auto text-center py-20">
-                    <h2 class="text-4xl font-bold text-slate-900 mb-4">Good morning, Counsel.</h2>
-                    <p class="text-slate-500 text-lg">LexAI has indexed 14 new case law updates relevant to your active matters. How shall we proceed?</p>
-                </div>
-                <!-- Active Messages -->
-                <div id="messages-container" class="max-w-4xl mx-auto space-y-8"></div>
-            </div>
-
-            <!-- Agentic Workflow Orchestrator (Hidden by default) -->
-            <div id="orchestrator-panel" class="hidden px-8 py-4 border-t border-slate-200 bg-slate-100/50 backdrop-blur">
-                <div class="max-w-4xl mx-auto flex items-center gap-6 overflow-x-auto no-scrollbar pb-2">
-                    <div class="agent-step flex items-center gap-2 whitespace-nowrap text-xs font-medium text-slate-400" id="step-manager">
-                        <div class="w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">1</div>
-                        Orchestration Manager
-                    </div>
-                    <div class="agent-step flex items-center gap-2 whitespace-nowrap text-xs font-medium text-slate-400" id="step-tax">
-                        <div class="w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">2</div>
-                        Tax Compliance Agent
-                    </div>
-                    <div class="agent-step flex items-center gap-2 whitespace-nowrap text-xs font-medium text-slate-400" id="step-risk">
-                        <div class="w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">3</div>
-                        Risk Mitigation Agent
+            <!-- Chat Container -->
+            <div id="chat-window" class="flex-1 overflow-y-auto px-10 py-8 scroll-smooth">
+                <!-- Welcome/Feature Grid -->
+                <div id="hero-state" class="max-w-4xl mx-auto mt-12 mb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                    <h1 id="welcome-header" class="text-5xl font-bold mb-6 tracking-tight"></h1>
+                    <p class="text-xl text-slate-400 mb-12">The world's most advanced autonomous legal engine.</p>
+                    
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="dark-card p-6 rounded-2xl hover:border-gold/50 transition-all group">
+                            <div class="w-12 h-12 bg-slate-900 rounded-xl mb-4 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Massive Document Synthesis</h3>
+                            <p class="text-sm text-slate-500">Upload 1,000+ page filings. LexAI indexes every clause with 99.9% semantic accuracy.</p>
+                        </div>
+                        <div class="dark-card p-6 rounded-2xl hover:border-gold/50 transition-all group">
+                            <div class="w-12 h-12 bg-slate-900 rounded-xl mb-4 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Agentic Orchestration</h3>
+                            <p class="text-sm text-slate-500">Parallel processing across Tax, Risk, and Compliance nodes for zero-mistake outputs.</p>
+                        </div>
                     </div>
                 </div>
+
+                <div id="message-list" class="max-w-4xl mx-auto space-y-10"></div>
+                
+                <!-- "Thinking" Indicator -->
+                <div id="ai-thinking" class="hidden max-w-4xl mx-auto py-4 flex items-center gap-3 text-slate-500 text-sm italic">
+                    <span class="flex gap-1">
+                        <span class="w-1.5 h-1.5 bg-gold rounded-full thinking-dot"></span>
+                        <span class="w-1.5 h-1.5 bg-gold rounded-full thinking-dot" style="animation-delay: 0.2s"></span>
+                        <span class="w-1.5 h-1.5 bg-gold rounded-full thinking-dot" style="animation-delay: 0.4s"></span>
+                    </span>
+                    Agentic nodes analyzing corpus...
+                </div>
             </div>
 
-            <!-- Input Bar -->
-            <div class="p-8 pt-0">
+            <!-- Input System -->
+            <div class="px-10 pb-10">
                 <div class="max-w-4xl mx-auto">
-                    <div class="relative group bg-white rounded-2xl shadow-lg border border-slate-200 focus-within:ring-2 focus-within:ring-slate-900 focus-within:border-transparent transition-all">
-                        <textarea id="chat-input" rows="1" class="w-full pl-6 pr-24 py-4 rounded-2xl resize-none focus:outline-none text-slate-700 leading-relaxed" placeholder="Draft a specialized liability clause for M&A in Delaware..."></textarea>
-                        <div class="absolute right-3 bottom-3 flex gap-2">
-                            <button class="p-2 text-slate-400 hover:text-slate-600 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                            </button>
-                            <button id="send-btn" class="p-2 navy-deep text-white rounded-xl shadow-md hover:bg-slate-800 transition-all active:scale-95">
+                    <!-- File Progress Bar (Hidden) -->
+                    <div id="upload-progress" class="hidden mb-4 p-4 dark-card rounded-xl">
+                        <div class="flex justify-between text-xs mb-2">
+                            <span id="file-status">Indexing Document...</span>
+                            <span id="progress-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div id="progress-bar" class="bg-gold h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+
+                    <div class="relative dark-card rounded-3xl p-2 border-slate-700/50 shadow-2xl focus-within:border-gold/40 transition-all">
+                        <div class="flex items-end">
+                            <label class="p-4 cursor-pointer text-slate-500 hover:text-gold transition-colors">
+                                <input type="file" id="file-upload" class="hidden" multiple>
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                            </label>
+                            <textarea id="chat-input" rows="1" class="w-full bg-transparent border-none focus:outline-none p-4 text-slate-200 resize-none max-h-60" placeholder="Ask anything, or upload complex files..."></textarea>
+                            <button id="send-btn" class="m-2 p-4 bg-gold text-white rounded-2xl hover:shadow-[0_0_15px_rgba(191,149,63,0.4)] transition-all">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
                             </button>
                         </div>
                     </div>
-                    <p class="text-center text-[10px] text-slate-400 mt-3 uppercase tracking-widest font-bold">LexAI Sovereign Intelligence Layer - Final Review Advised</p>
                 </div>
             </div>
         </main>
