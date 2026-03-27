@@ -109,6 +109,7 @@ const SessionManager = {
     togglePin: function(id) {
         const s = State.sessions.find(x => x.id === id);
         if(s) { s.isPinned = !s.isPinned; this.saveAll(); }
+        closeAllMenus();
     },
     
     rename: function(id) {
@@ -120,6 +121,7 @@ const SessionManager = {
                 this.saveAll();
             }
         }
+        closeAllMenus();
     },
     
     deleteChat: function(id) {
@@ -128,6 +130,7 @@ const SessionManager = {
             if(State.currentSessionId === id) this.createNew();
             this.saveAll();
         }
+        closeAllMenus();
     },
     
     share: function(id) {
@@ -157,6 +160,7 @@ const SessionManager = {
                 : 'border-transparent text-[var(--text-main)] hover:bg-[var(--hover-bg)]';
             const pinIcon = session.isPinned ? '📌 ' : '';
 
+            // Cleaned up history item HTML (No nested context menu!)
             const itemHtml = `
             <div class="relative group flex items-center mb-1 w-full">
                 <button onclick="SessionManager.loadSession('${session.id}')" 
@@ -164,19 +168,12 @@ const SessionManager = {
                     ${pinIcon}${session.title}
                 </button>
                 
-                <button onclick="event.stopPropagation(); toggleContextMenu(event, '${session.id}')" 
+                <button onclick="toggleContextMenu(event, '${session.id}')" 
                         class="absolute right-1 top-1/2 -translate-y-1/2 z-20 p-3 text-[var(--text-muted)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:text-[var(--text-main)] rounded-lg">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="8" cy="4" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="8" cy="12" r="1"/>
                     </svg>
                 </button>
-                
-                <div id="menu-${session.id}" class="context-menu hidden absolute right-2 top-12 w-40 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 overflow-hidden text-sm">
-                    <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.share('${session.id}')">Share</div>
-                    <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.rename('${session.id}')">Rename</div>
-                    <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.togglePin('${session.id}')">${session.isPinned ? 'Unpin' : 'Pin'}</div>
-                    <div class="hover:bg-red-500/10 text-red-500 p-3 cursor-pointer transition-colors" onclick="event.stopPropagation(); SessionManager.deleteChat('${session.id}')">Delete</div>
-                </div>
             </div>`;
             
             list.insertAdjacentHTML('beforeend', itemHtml);
@@ -277,17 +274,57 @@ function renderAppStates() {
 }
 
 /* ═══════════════════════════════════════════
-   2. UI INTERACTION HELPERS
+   2. UI INTERACTION HELPERS & GLOBAL MENU
 ═══════════════════════════════════════════ */
+let currentContextMenuId = null;
+
 function toggleContextMenu(event, id) {
     event.stopPropagation();
+    const menu = document.getElementById('global-context-menu');
+
+    // Perfect Toggle Logic: If clicking the same button, close it
+    if (currentContextMenuId === id && !menu.classList.contains('hidden')) {
+        closeAllMenus();
+        return;
+    }
+
     closeAllMenus();
-    const menu = document.getElementById(`menu-${id}`);
-    if (menu) menu.classList.remove('hidden');
+    currentContextMenuId = id;
+    
+    const session = State.sessions.find(s => s.id === id);
+    if (!session) return;
+    
+    const pinText = session.isPinned ? 'Unpin' : 'Pin';
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+
+    menu.innerHTML = `
+        <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.share('${id}')">Share</div>
+        <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.rename('${id}')">Rename</div>
+        <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.togglePin('${id}')">${pinText}</div>
+        <div class="hover:bg-red-500/10 text-red-500 p-3 cursor-pointer transition-colors" onclick="event.stopPropagation(); SessionManager.deleteChat('${id}')">Delete</div>
+    `;
+
+    menu.classList.remove('hidden');
+
+    // Dynamic Positioning Logic (Prevents clipping offscreen)
+    const menuRect = menu.getBoundingClientRect();
+    let topPos = buttonRect.bottom + 5;
+    let leftPos = buttonRect.right - menuRect.width; 
+
+    // Open upwards if near the bottom of the screen
+    if (topPos + menuRect.height > window.innerHeight) {
+        topPos = buttonRect.top - menuRect.height - 5; 
+    }
+    if (leftPos < 0) leftPos = 10; 
+
+    menu.style.top = `${topPos}px`;
+    menu.style.left = `${leftPos}px`;
 }
 
 function closeAllMenus() {
-    document.querySelectorAll('.context-menu').forEach(menu => menu.classList.add('hidden'));
+    const menu = document.getElementById('global-context-menu');
+    if (menu) menu.classList.add('hidden');
+    currentContextMenuId = null;
 }
 document.addEventListener('click', closeAllMenus); 
 
@@ -525,7 +562,7 @@ function appendTypingIndicator() {
    6. UTILITIES & INIT
 ═══════════════════════════════════════════ */
 function triggerFileUpload() { document.getElementById('hidden-file-input')?.click(); }
-function startNewChat() { SessionManager.createNew(); }
+function startNewChat() { SessionManager.createNew(); closeAllMenus(); }
 
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -535,6 +572,7 @@ function toggleSidebar() {
         sidebar.classList.add('-translate-x-full');
         setTimeout(() => sidebar.classList.add('hidden'), 300);
     }
+    closeAllMenus();
 }
 
 function autoResize(el) {
