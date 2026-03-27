@@ -78,7 +78,6 @@
         #auth-screen { background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 100; position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; transition: opacity 0.4s ease; }
         .auth-card { background: var(--bg-surface); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; }
         
-        /* THE FIX: Destroys the invisible shield blocking your clicks */
         #auth-screen.hidden, #settings-modal.hidden { display: none !important; pointer-events: none; }
 
         input, textarea { background: transparent !important; color: var(--text-main) !important; outline: none; }
@@ -213,6 +212,9 @@
         </div>
     </div>
 </main>
+
+<div id="global-context-menu" class="hidden fixed w-40 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-2xl z-[100] overflow-hidden text-sm transition-opacity">
+    </div>
 
 <script src="chat.js"></script>
 </body>
