@@ -10,7 +10,7 @@ const CONFIG = {
   MEMORY_DEPTH: 20,            
 };
 
-// This prompt creates the "calm, highly intelligent, and attractive" persona.
+// The upgraded Brain with the legal disclaimer protocol
 const SYSTEM_PROMPT = `You are Lex, an elite AI advisor. You are the smartest, most experienced mind in the room, yet you communicate with a calm, refined, and effortlessly attractive demeanor. You never sound robotic, panicked, or overly formal. You speak like a highly sought-after consultant who has seen it all and knows exactly how to guide the user.
 
 CRITICAL PRINCIPLES:
@@ -18,7 +18,13 @@ CRITICAL PRINCIPLES:
 2. Provide deeply insightful, highly accurate answers to ANY question (easy, medium, or the most complex problems in the world).
 3. Structure your answers beautifully using markdown (bolding, headers, bullet points) so they are easy to read.
 4. If a problem is highly complex, break it down step-by-step with effortless clarity.
-5. Build rapport. You are a trusted, premium advisor.`;
+5. Build rapport. You are a trusted, premium advisor.
+
+LIABILITY PROTOCOL (CRITICAL):
+If the user asks a question involving legal advice, drafting legal contracts, compliance, financial investments, tax implications, or sensitive corporate actions, you MUST append this exact markdown text at the very end of your response, separated by a horizontal rule:
+
+---
+*<small>⚠️ **Disclaimer:** This analysis is provided for educational and strategic purposes only and does not constitute official legal, financial, or tax advice. Lex is an AI, and while highly capable, its outputs may contain inaccuracies. Please consult with certified legal counsel or a qualified professional before executing binding agreements or making critical business decisions.</small>*`;
 
 /* ═══════════════════════════════════════════
    STATE MANAGEMENT
@@ -200,7 +206,7 @@ const DocProcessor = {
 };
 
 /* ═══════════════════════════════════════════
-   4. MESSAGE PROCESSING & UI
+   4. MESSAGE PROCESSING & UI (UPDATED FOR SCROLL FIX)
 ═══════════════════════════════════════════ */
 async function processMessage() {
   if (State.isProcessing) return;
@@ -255,13 +261,12 @@ function streamText(fullText) {
         current += (i > 0 ? ' ' : '') + words[i];
         el.innerHTML = formatHTML(current) + '<span class="typing-cursor">|</span>';
         i++;
-        box.scrollTop = box.scrollHeight;
+        // Auto-scroll removed from here so it stays at the top of the answer
       } else {
         clearInterval(tick);
         el.innerHTML = formatHTML(fullText);
         el.classList.remove('typing-cursor');
         el.id = '';
-        box.scrollTop = box.scrollHeight;
         resolve();
       }
     }, CONFIG.STREAM_SPEED);
@@ -285,13 +290,19 @@ function appendBubble(role, text) {
   if(!box) return;
   const div = document.createElement('div');
   div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+  
   if (role === 'user') {
     div.innerHTML = `<div class="max-w-[85%] user-bubble p-4 text-sm"><p>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>`;
   } else {
     div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base"><div>${formatHTML(text)}</div></div>`;
   }
+  
   box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
+  
+  // ONLY scroll when the user types, not when AI types
+  if (role === 'user') {
+    box.scrollTop = box.scrollHeight;
+  }
 }
 
 function appendTypingIndicator() {
@@ -302,7 +313,10 @@ function appendTypingIndicator() {
   div.className = 'flex justify-start';
   div.innerHTML = `<div class="ai-bubble px-6 py-3 text-xs text-zinc-500 italic animate-pulse">Lex is thinking...</div>`;
   box.appendChild(div);
+  
+  // Keep scroll here so the user sees the "thinking" animation appear
   box.scrollTop = box.scrollHeight;
+  
   return id;
 }
 
