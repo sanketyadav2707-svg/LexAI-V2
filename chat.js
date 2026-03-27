@@ -4,13 +4,13 @@
    CONFIGURATION & SYSTEM PROMPT
 ═══════════════════════════════════════════ */
 const CONFIG = {
-  API_ENDPOINT: '/api/chat',   // Securely points to your Vercel backend
+  API_ENDPOINT: '/api/chat',   
   MAX_DOC_CHARS: 80000,        
-  STREAM_SPEED: 18,            
+  STREAM_SPEED: 15,            
   MEMORY_DEPTH: 20,            
 };
 
-// The upgraded Brain with the Dynamic Liability Protocol
+// Upgraded Brain: Halts hallucinations on vague prompts + Dynamic Liability Protocol
 const SYSTEM_PROMPT = `You are Lex, an elite AI advisor. You are the smartest, most experienced mind in the room, yet you communicate with a calm, refined, and effortlessly attractive demeanor. You never sound robotic, panicked, or overly formal. You speak like a highly sought-after consultant who has seen it all and knows exactly how to guide the user.
 
 CRITICAL PRINCIPLES:
@@ -19,6 +19,7 @@ CRITICAL PRINCIPLES:
 3. Structure your answers beautifully using markdown (bolding, headers, bullet points) so they are easy to read.
 4. If a problem is highly complex, break it down step-by-step with effortless clarity.
 5. Build rapport. You are a trusted, premium advisor.
+6. ANTI-HALLUCINATION PROTOCOL: If the user provides a vague or incomplete prompt (e.g., "Tell me", "Hi", "Help"), do NOT generate repetitive characters, asterisks, or random information. Politely and concisely ask them to clarify how you can assist them today.
 
 DYNAMIC LIABILITY PROTOCOL (CRITICAL):
 You must analyze every single user query to determine if it involves:
@@ -142,12 +143,12 @@ const LexAI = {
       if (!reply) throw new Error('No response generated.');
 
       State.conversationHistory.push({ role: 'user', content: userQuery });
-      State.conversationHistory.push({ role: 'assistant', content: reply });
+      State.conversationHistory.push({ role: 'assistant', content: String(reply) });
       if (State.conversationHistory.length > CONFIG.MEMORY_DEPTH * 2) {
         State.conversationHistory = State.conversationHistory.slice(-(CONFIG.MEMORY_DEPTH * 2));
       }
 
-      return reply;
+      return String(reply); // Enforce string type to prevent mobile crashes
 
     } catch (err) {
       console.error('[LexAI] Error:', err.message);
@@ -212,7 +213,7 @@ const DocProcessor = {
 };
 
 /* ═══════════════════════════════════════════
-   4. MESSAGE PROCESSING & UI
+   4. MOBILE-OPTIMIZED MESSAGE UI
 ═══════════════════════════════════════════ */
 async function processMessage() {
   if (State.isProcessing) return;
@@ -249,27 +250,31 @@ async function processMessage() {
   State.isProcessing = false;
 }
 
+// Rebuilt: Uses chunked character streaming to prevent mobile regex/array crashes
 function streamText(fullText) {
   return new Promise(resolve => {
     const box = document.getElementById('chat-messages');
     const div = document.createElement('div');
-    div.className = 'flex justify-start';
-    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base w-full"><div id="streaming-p" class="text-zinc-200 typing-cursor w-full"></div></div>`;
+    div.className = 'flex justify-start w-full';
+    
+    // Updated responsive classes: wider bubbles and less padding on mobile
+    div.innerHTML = `<div class="max-w-[95%] md:max-w-[85%] ai-bubble p-4 md:p-6 text-base text-zinc-200 w-full break-words"><div id="streaming-p" class="typing-cursor w-full"></div></div>`;
     box.appendChild(div);
 
     const el = document.getElementById('streaming-p');
-    const words = fullText.split(' ');
-    let current = '';
+    const textToStream = String(fullText);
+    
     let i = 0;
+    const chunkSize = 3; // Streams 3 chars at a time for smooth speed
 
     const tick = setInterval(() => {
-      if (i < words.length) {
-        current += (i > 0 ? ' ' : '') + words[i];
+      if (i < textToStream.length) {
+        i += chunkSize;
+        let current = textToStream.substring(0, i);
         el.innerHTML = formatHTML(current) + '<span class="typing-cursor">|</span>';
-        i++;
       } else {
         clearInterval(tick);
-        el.innerHTML = formatHTML(fullText);
+        el.innerHTML = formatHTML(textToStream);
         el.classList.remove('typing-cursor');
         el.id = '';
         resolve();
@@ -279,16 +284,17 @@ function streamText(fullText) {
 }
 
 function formatHTML(text) {
+  if (!text) return '';
   return text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    // This line creates the beautiful custom Disclaimer Box
-    .replace(/^⚠️ \*\*(.*?)\*\*(.*)$/gm, '<div class="mt-8 p-4 rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-400 text-sm leading-relaxed flex items-start gap-3 shadow-sm w-full"><span class="text-xl leading-none flex-shrink-0">⚠️</span> <div><strong class="text-zinc-300 font-semibold">$1</strong>$2</div></div>')
+    .replace(/^⚠️ \*\*(.*?)\*\*(.*)$/gm, '<div class="mt-6 p-4 rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-400 text-sm leading-relaxed flex items-start gap-3 w-full"><span class="text-xl leading-none flex-shrink-0">⚠️</span> <div><strong class="text-zinc-300 font-semibold">$1</strong>$2</div></div>')
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em class="text-zinc-300">$1</em>')
     .replace(/^### (.+)$/gm, '<h4 class="text-zinc-200 font-medium text-sm mt-3 mb-1">$1</h4>')
     .replace(/^## (.+)$/gm, '<h3 class="text-white font-semibold mt-4 mb-2 pb-1 border-b border-zinc-800">$1</h3>')
-    .replace(/^\d+\. (.+)$/gm, '<div class="flex gap-2 my-1"><span class="text-zinc-600 text-xs flex-shrink-0 mt-1">●</span><span class="text-zinc-300 text-sm">$1</span></div>')
-    .replace(/^[-•] (.+)$/gm, '<div class="flex gap-2 my-0.5 ml-2"><span class="text-zinc-700 flex-shrink-0">—</span><span class="text-zinc-300 text-sm">$1</span></div>')
-    .replace(/`([^`]+)`/g, '<code class="bg-zinc-800 text-green-300 px-1 rounded text-xs font-mono">$1</code>')
+    .replace(/^\d+\. (.+)$/gm, '<div class="flex gap-2 my-1"><span class="text-zinc-500 flex-shrink-0 mt-0.5">$1.</span><span class="text-zinc-300">$2</span></div>')
+    .replace(/^[-•] (.+)$/gm, '<div class="flex gap-2 my-1"><span class="text-zinc-600 flex-shrink-0">—</span><span class="text-zinc-300">$1</span></div>')
+    .replace(/`([^`]+)`/g, '<code class="bg-zinc-800 text-green-300 px-1.5 py-0.5 rounded text-xs font-mono break-all">$1</code>')
     .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
 }
 
@@ -296,12 +302,12 @@ function appendBubble(role, text) {
   const box = document.getElementById('chat-messages');
   if(!box) return;
   const div = document.createElement('div');
-  div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+  div.className = role === 'user' ? 'flex justify-end w-full' : 'flex justify-start w-full';
   
   if (role === 'user') {
-    div.innerHTML = `<div class="max-w-[85%] user-bubble p-4 text-sm"><p>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>`;
+    div.innerHTML = `<div class="max-w-[90%] md:max-w-[85%] user-bubble p-3 md:p-4 text-sm text-white break-words"><p>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>`;
   } else {
-    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base w-full"><div>${formatHTML(text)}</div></div>`;
+    div.innerHTML = `<div class="max-w-[95%] md:max-w-[85%] ai-bubble p-4 md:p-6 text-base text-zinc-200 w-full break-words"><div>${formatHTML(String(text))}</div></div>`;
   }
   
   box.appendChild(div);
@@ -316,8 +322,8 @@ function appendTypingIndicator() {
   const box = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.id = id;
-  div.className = 'flex justify-start';
-  div.innerHTML = `<div class="ai-bubble px-6 py-3 text-xs text-zinc-500 italic animate-pulse">Lex is thinking...</div>`;
+  div.className = 'flex justify-start w-full';
+  div.innerHTML = `<div class="max-w-[95%] md:max-w-[85%] ai-bubble px-4 py-3 md:px-6 md:py-3 text-xs text-zinc-500 italic animate-pulse">Lex is thinking...</div>`;
   box.appendChild(div);
   
   box.scrollTop = box.scrollHeight;
