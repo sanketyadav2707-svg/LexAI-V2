@@ -4,15 +4,7 @@
  * LEX SYSTEM v7.0 — REAL AI INTELLIGENCE ENGINE
  * ─────────────────────────────────────────────────────────────────
  * Replaces the fake LexBrain with real AI calls.
- * Powered by: Groq (Llama 3.3 70B) + Gemini 1.5 Pro fallback
- * Target Users: Consultants, Lawyers, CEOs, CFOs, VPs, MBAs, Law Students
- * Key Features:
- * - Real AI responses (human-like, expert-level)
- * - Full document analysis (1000+ page support)
- * - Persistent conversation memory
- * - Deep thinking mode
- * - Streaming text output
- * - PDF extraction via pdf.js
+ * Powered by: Groq (Llama 3.3 70B)
  * ─────────────────────────────────────────────────────────────────
  */
 
@@ -20,7 +12,11 @@
    CONFIGURATION
 ═══════════════════════════════════════════ */
 const CONFIG = {
-  API_ENDPOINT: '/api/chat',   // Your Vercel/Netlify function
+  // Direct Groq API endpoint for testing (Standard OpenAI format)
+  API_ENDPOINT: 'https://api.groq.com/openai/v1/chat/completions', 
+  // ⚠️ Paste your real Groq API key here to fix the 404 error
+  GROQ_API_KEY: 'YOUR_GROQ_API_KEY_HERE', 
+  
   MAX_DOC_CHARS: 80000,        // ~80k chars = ~1000 pages
   STREAM_SPEED: 18,            // ms per word (lower = faster)
   MEMORY_DEPTH: 20,            // conversation pairs to remember
@@ -28,8 +24,6 @@ const CONFIG = {
 
 /* ═══════════════════════════════════════════
    MASTER SYSTEM PROMPT
-   This is what makes Lex beat ChatGPT, Gemini,
-   Grok, and NotebookLM in the professional domain
 ═══════════════════════════════════════════ */
 const SYSTEM_PROMPT = `You are Lex, an elite AI advisor engineered for the world's most demanding professionals: management consultants, corporate lawyers, investment bankers, CEOs, CFOs, Vice Presidents, Directors, MBA students, and law students. You are not a generic assistant. You are the smartest, most experienced mind in the room.
 
@@ -116,35 +110,38 @@ const State = {
 
 /* ═══════════════════════════════════════════
    1. AUTHENTICATION & UI
-   (Identical signatures to original)
 ═══════════════════════════════════════════ */
 function setAuthMode(mode) {
   const signupFields = document.getElementById('signup-fields');
   const loginTab = document.getElementById('login-tab');
   const signupTab = document.getElementById('signup-tab');
   if (mode === 'signup') {
-    signupFields.classList.remove('hidden');
-    signupTab.className = "py-2 text-sm font-semibold text-white border-b-2 border-white transition-all";
-    loginTab.className = "py-2 text-sm font-semibold text-zinc-500 border-b-2 border-transparent transition-all";
+    if(signupFields) signupFields.classList.remove('hidden');
+    if(signupTab) signupTab.className = "py-2 text-sm font-semibold text-white border-b-2 border-white transition-all";
+    if(loginTab) loginTab.className = "py-2 text-sm font-semibold text-zinc-500 border-b-2 border-transparent transition-all";
   } else {
-    signupFields.classList.add('hidden');
-    loginTab.className = "py-2 text-sm font-semibold text-white border-b-2 border-white transition-all";
-    signupTab.className = "py-2 text-sm font-semibold text-zinc-500 border-b-2 border-transparent transition-all";
+    if(signupFields) signupFields.classList.add('hidden');
+    if(loginTab) loginTab.className = "py-2 text-sm font-semibold text-white border-b-2 border-white transition-all";
+    if(signupTab) signupTab.className = "py-2 text-sm font-semibold text-zinc-500 border-b-2 border-transparent transition-all";
   }
 }
 
 function submitAuth() {
-  const email = document.getElementById('auth-email').value;
+  const email = document.getElementById('auth-email')?.value;
   const nameEl = document.getElementById('auth-name');
-  const name = (nameEl && nameEl.value) ? nameEl.value : email.split('@')[0];
+  const name = (nameEl && nameEl.value) ? nameEl.value : (email ? email.split('@')[0] : 'User');
   const logo = document.getElementById('auth-logo');
+  
   if (!email) return alert("Email required.");
+  
   if (logo) logo.classList.add('logo-animate');
   setTimeout(() => {
     State.currentUser = { name, email };
     localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
+    
     const authScreen = document.getElementById('auth-screen');
-    if (authScreen) authScreen.style.display = 'none';
+    if (authScreen) authScreen.style.display = 'none'; // Hide auth screen after login
+    
     const nameDisplay = document.getElementById('user-display-name');
     if (nameDisplay) nameDisplay.innerText = name;
   }, 600);
@@ -161,17 +158,17 @@ function handleSignout() {
 }
 
 /* ═══════════════════════════════════════════
-   2. REAL AI ENGINE
+   2. REAL AI ENGINE (UPDATED FOR DIRECT API)
 ═══════════════════════════════════════════ */
 const LexAI = {
 
-  /**
-   * Build messages array with document context + history
-   */
   buildMessages: function(userQuery) {
     const messages = [];
+    
+    // 1. Inject the System Prompt for Groq/OpenAI format
+    messages.push({ role: 'system', content: SYSTEM_PROMPT });
 
-    // Inject document as context if uploaded
+    // 2. Inject document as context if uploaded
     if (State.uploadedDocument) {
       messages.push({
         role: 'user',
@@ -183,11 +180,11 @@ const LexAI = {
       });
     }
 
-    // Add conversation history
+    // 3. Add conversation history
     const history = State.conversationHistory.slice(-(CONFIG.MEMORY_DEPTH * 2));
     messages.push(...history);
 
-    // Build final query
+    // 4. Build final query
     const isDeep = document.getElementById('think-toggle')?.checked || false;
     let finalQuery = userQuery;
     if (isDeep) {
@@ -198,29 +195,37 @@ const LexAI = {
     return messages;
   },
 
-  /**
-   * Call the AI API
-   */
   call: async function(userQuery) {
+    if (CONFIG.GROQ_API_KEY === 'YOUR_GROQ_API_KEY_HERE') {
+      throw new Error("Missing API Key. Please add your Groq API key to the CONFIG object at the top of chat.js.");
+    }
+
     const messages = this.buildMessages(userQuery);
 
     try {
       const res = await fetch(CONFIG.API_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${CONFIG.GROQ_API_KEY}` // Required for direct API calls
+        },
         body: JSON.stringify({
-          messages,
-          system: SYSTEM_PROMPT
+          model: 'llama-3.3-70b-versatile', // The specific Groq model
+          messages: messages,
+          temperature: 0.3
         })
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Server error ${res.status}`);
+        throw new Error(err.error?.message || `Server error ${res.status}`);
       }
 
       const data = await res.json();
-      const reply = data.reply || data.content || data.message;
+      
+      // Parse standard OpenAI/Groq response format
+      const reply = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : null;
+      
       if (!reply) throw new Error('No response from AI');
 
       // Save to memory
@@ -234,17 +239,15 @@ const LexAI = {
 
     } catch (err) {
       console.error('[LexAI] Error:', err.message);
-      return `**Connection issue:** ${err.message}\n\nPlease check your connection and try again in a moment.`;
+      return `**Connection issue:** ${err.message}\n\nPlease check your configuration.`;
     }
   }
 };
 
 /* ═══════════════════════════════════════════
    3. DOCUMENT PROCESSOR
-   Full support for PDF, TXT, CSV, JSON, MD
 ═══════════════════════════════════════════ */
 const DocProcessor = {
-
   process: async function(file) {
     const name = file.name;
     const type = file.type || '';
@@ -304,13 +307,13 @@ const DocProcessor = {
 };
 
 /* ═══════════════════════════════════════════
-   4. MESSAGE PROCESSING
-   (Same function names as original)
+   4. MESSAGE PROCESSING & UI LOGIC
 ═══════════════════════════════════════════ */
 async function processMessage() {
   if (State.isProcessing) return;
 
   const input = document.getElementById('user-query');
+  if(!input) return;
   const query = input.value.trim();
   if (!query) return;
 
@@ -336,15 +339,12 @@ async function processMessage() {
   } catch (err) {
     const typingEl = document.getElementById(typingId);
     if (typingEl) typingEl.remove();
-    appendBubble('ai', `⚠️ Error: ${err.message}. Please try again.`);
+    appendBubble('ai', `⚠️ Error: ${err.message}.`);
   }
 
   State.isProcessing = false;
 }
 
-/**
- * Stream text word by word — creates natural reading flow
- */
 function streamText(fullText) {
   return new Promise(resolve => {
     const box = document.getElementById('chat-messages');
@@ -379,9 +379,6 @@ function streamText(fullText) {
   });
 }
 
-/**
- * Format AI response into rich HTML
- */
 function formatHTML(text) {
   return text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -400,6 +397,7 @@ function formatHTML(text) {
 
 function appendBubble(role, text) {
   const box = document.getElementById('chat-messages');
+  if(!box) return;
   const div = document.createElement('div');
   div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
   if (role === 'user') {
@@ -425,10 +423,10 @@ function appendTypingIndicator() {
 }
 
 /* ═══════════════════════════════════════════
-   5. FILE UPLOAD
+   5. FILE UPLOAD & UTILITIES
 ═══════════════════════════════════════════ */
 function triggerFileUpload() {
-  document.getElementById('hidden-file-input').click();
+  document.getElementById('hidden-file-input')?.click();
 }
 
 async function handleFileSelect(e) {
@@ -449,19 +447,15 @@ async function handleFileSelect(e) {
       `- "Give me an executive summary"\n` +
       `- "What are the key risks in this document?"\n` +
       `- "Explain clause X in detail"\n` +
-      `- "Does this contract protect us on indemnity?"\n` +
       `- Any specific question about any part\n\n` +
       `What would you like to know?`
     );
   } else {
-    appendBubble('ai', `⚠️ **Processing issue:** ${result.error}\n\nTry PDF, TXT, MD, CSV, or JSON formats. You can also paste text directly into the chat.`);
+    appendBubble('ai', `⚠️ **Processing issue:** ${result.error}\n\nTry PDF, TXT, MD, CSV, or JSON formats.`);
   }
   e.target.value = '';
 }
 
-/* ═══════════════════════════════════════════
-   6. UTILITIES (identical signatures)
-═══════════════════════════════════════════ */
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
@@ -482,21 +476,26 @@ function startNewChat() {
 }
 
 /* ═══════════════════════════════════════════
-   7. INIT
+   7. INIT & AUTH FIX
 ═══════════════════════════════════════════ */
 window.onload = () => {
-  // Auto-login
   const saved = localStorage.getItem('lex_user');
+  const authScreen = document.getElementById('auth-screen');
+  
   if (saved) {
+    // User exists, log them in
     try {
       State.currentUser = JSON.parse(saved);
-      const authScreen = document.getElementById('auth-screen');
       if (authScreen) authScreen.style.display = 'none';
       const nameDisplay = document.getElementById('user-display-name');
       if (nameDisplay) nameDisplay.innerText = State.currentUser.name;
     } catch (e) {
       localStorage.removeItem('lex_user');
+      if (authScreen) authScreen.style.display = 'flex'; // Show screen if JSON parse fails
     }
+  } else {
+    // FIX: Explicitly SHOW the auth screen if no user is found
+    if (authScreen) authScreen.style.display = 'flex'; // Or 'block', depending on your CSS framework
   }
 
   // Load pdf.js for PDF support
