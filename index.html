@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LexAI | Executive Intelligence</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #000; color: #E5E5E5; overflow: hidden; height: 100vh; }
+        /* Changed to 100dvh to fix the mobile bottom-bar cutoff issue */
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #000; color: #E5E5E5; overflow: hidden; height: 100dvh; width: 100vw; }
         .sidebar { background: #080808; border-right: 1px solid #1A1A1A; }
         .ai-bubble { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 1.5rem; }
         .user-bubble { background: #141414; border: 1px solid #222; border-radius: 1.2rem; }
@@ -23,7 +24,7 @@
         .typing-cursor::after { content: '|'; animation: blink 0.8s infinite; color: #60A5FA; }
         @keyframes blink { 50% { opacity: 0; } }
 
-        #auth-screen { background: #000; z-index: 100; position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+        #auth-screen { background: #000; z-index: 100; position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; }
         .auth-card { background: #0A0A0A; border: 1px solid #1A1A1A; width: 100%; max-width: 400px; padding: 40px; border-radius: 32px; }
         
         input, textarea { background: #111 !important; border: 1px solid #222 !important; color: white !important; outline: none; }
@@ -33,25 +34,20 @@
         ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
     </style>
 </head>
-<body class="flex h-screen">
+<body class="flex h-[100dvh] relative">
 
-<!-- ── AUTH SCREEN ── -->
-<!-- ── AUTH SCREEN ── -->
 <div id="auth-screen">
     <div class="auth-card">
         <div class="text-center mb-8">
-            <!-- Logo with Animation -->
             <h1 id="auth-logo" class="text-3xl font-bold tracking-tighter italic text-white transition-all">LexAI</h1>
             
             <div class="flex justify-center gap-10 mt-8 border-b border-zinc-900">
-                <!-- TABS: Login & Sign Up are now clearly visible -->
                 <button type="button" onclick="setAuthMode('login')" id="login-tab" class="active-tab py-2 text-sm font-semibold text-white transition-all">Login</button>
                 <button type="button" onclick="setAuthMode('signup')" id="signup-tab" class="py-2 text-sm font-semibold text-zinc-500 transition-all hover:text-white">Sign Up</button>
             </div>
         </div>
 
         <div class="space-y-4">
-            <!-- Name field: Hidden by default, shows with animation during Signup -->
             <div id="signup-fields" class="hidden">
                 <input id="auth-name" type="text" placeholder="Your Name" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-sm text-white outline-none animate-slide-up focus:border-zinc-500">
             </div>
@@ -63,17 +59,24 @@
                 <button type="button" onclick="togglePass()" class="absolute right-4 top-3.5 text-zinc-500 hover:text-white transition-colors">👁️</button>
             </div>
 
-            <!-- Animated Action Button -->
             <button type="button" onclick="submitAuth()" class="w-full bg-white text-black font-bold py-4 rounded-xl mt-4 hover:bg-zinc-200 transition-all active:scale-95 shadow-lg">
                 Continue
             </button>
         </div>
     </div>
 </div>
-<!-- ── SIDEBAR ── -->
-<aside class="sidebar w-64 flex flex-col hidden md:flex">
+
+<button onclick="toggleSidebar()" class="md:hidden absolute top-4 left-4 z-50 p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-white shadow-xl hover:bg-zinc-800 transition-all">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
+
+<aside id="sidebar" class="sidebar w-64 flex-col hidden absolute inset-y-0 left-0 z-40 bg-[#080808] md:relative md:flex shadow-2xl md:shadow-none transition-transform">
+    <div class="flex justify-between items-center p-5 border-b border-zinc-900 md:border-none">
+        <h2 class="text-white font-bold italic md:hidden">LexAI</h2>
+        <button onclick="toggleSidebar()" class="md:hidden text-zinc-500 hover:text-white p-1">✕</button>
+    </div>
     <div class="p-5">
-        <button onclick="startNewChat()" class="w-full py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-all text-sm font-semibold flex items-center justify-center gap-2">
+        <button onclick="startNewChat(); toggleSidebar();" class="w-full py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-all text-sm font-semibold flex items-center justify-center gap-2">
             <span>+</span> New Session
         </button>
     </div>
@@ -86,38 +89,51 @@
     </div>
 </aside>
 
-<!-- ── MAIN CONTENT ── -->
-<main class="flex-1 flex flex-col relative bg-black">
-    <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center text-center px-6">
-        <h1 class="text-4xl font-bold text-white mb-2">Hi <span id="user-display-name">Counselor</span>,</h1>
-        <p class="text-zinc-500 text-lg">How can I help you today?</p>
+<main class="flex-1 flex flex-col relative bg-black h-[100dvh] w-full overflow-hidden">
+    <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center text-center px-6 pt-16 md:pt-0">
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Hi <span id="user-display-name">Counselor</span>,</h1>
+        <p class="text-zinc-500 text-base md:text-lg">How can I help you today?</p>
     </div>
 
-    <div id="chat-messages" class="flex-1 overflow-y-auto px-6 py-10 space-y-8 hidden"></div>
+    <div id="chat-messages" class="flex-1 overflow-y-auto px-4 md:px-6 pt-20 pb-4 md:py-10 space-y-6 md:space-y-8 hidden"></div>
 
-    <!-- COMMAND CENTER -->
-    <div class="p-6">
-        <div class="max-w-3xl mx-auto input-area rounded-3xl p-4 shadow-2xl">
-            <textarea id="user-query" rows="1" oninput="autoResize(this)" onkeydown="handleInputKeydown(event)" placeholder="Message LexAI..." class="w-full bg-transparent border-none outline-none text-white text-base py-2 px-3 resize-none"></textarea>
-            <div class="flex items-center justify-between mt-4 border-t border-zinc-800 pt-4">
-                <div class="flex items-center gap-4">
-                    <button type="button" onclick="triggerFileUpload()" class="text-zinc-500 hover:text-white transition-all active:scale-90">
+    <div class="p-3 md:p-6 w-full shrink-0 bg-gradient-to-t from-black via-black to-transparent">
+        <div class="max-w-3xl mx-auto input-area rounded-2xl md:rounded-3xl p-3 md:p-4 shadow-2xl">
+            <textarea id="user-query" rows="1" oninput="autoResize(this)" onkeydown="handleInputKeydown(event)" placeholder="Message LexAI..." class="w-full bg-transparent border-none outline-none text-white text-sm md:text-base py-2 px-2 md:px-3 resize-none max-h-32 overflow-y-auto"></textarea>
+            
+            <div class="flex items-center justify-between mt-2 md:mt-4 border-t border-zinc-800 pt-2 md:pt-4">
+                <div class="flex items-center gap-2 md:gap-4">
+                    <button type="button" onclick="triggerFileUpload()" class="text-zinc-500 hover:text-white p-2 md:p-0 transition-all active:scale-90">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                     </button>
                     <input type="file" id="hidden-file-input" class="hidden" onchange="handleFileSelect(event)">
                     
-                    <div class="flex items-center gap-2 bg-zinc-900 rounded-full px-3 py-1.5 border border-zinc-800">
-                        <span class="text-[10px] font-bold text-zinc-500">DEEP THINKING</span>
-                        <input type="checkbox" id="think-toggle" class="w-4 h-4 accent-white cursor-pointer">
+                    <div class="flex items-center gap-1.5 md:gap-2 bg-zinc-900 rounded-full px-2.5 py-1.5 md:px-3 border border-zinc-800">
+                        <span class="text-[9px] md:text-[10px] font-bold text-zinc-500">DEEP THINKING</span>
+                        <input type="checkbox" id="think-toggle" class="w-3.5 h-3.5 md:w-4 md:h-4 accent-white cursor-pointer">
                     </div>
                 </div>
-                <button type="button" onclick="processMessage()" class="bg-white text-black h-10 px-6 rounded-full font-bold hover:scale-105 active:scale-95 transition-all">
+                <button type="button" onclick="processMessage()" class="bg-white text-black h-9 md:h-10 px-4 md:px-6 rounded-full font-bold text-sm md:text-base hover:scale-105 active:scale-95 transition-all shrink-0">
                     Send
                 </button>
             </div>
         </div>
     </div>
 </main>
+
+<script>
+    // Simple script to handle the Mobile Sidebar toggle
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar.classList.contains('hidden')) {
+            sidebar.classList.remove('hidden');
+            sidebar.classList.add('flex');
+        } else {
+            sidebar.classList.add('hidden');
+            sidebar.classList.remove('flex');
+        }
+    }
+</script>
 
 <script src="chat.js"></script>
 </body>
