@@ -1,102 +1,24 @@
 'use strict';
 
-/**
- * LEX SYSTEM v7.0 — REAL AI INTELLIGENCE ENGINE
- * ─────────────────────────────────────────────────────────────────
- * Replaces the fake LexBrain with real AI calls.
- * Powered by: Groq (Llama 3.3 70B)
- * ─────────────────────────────────────────────────────────────────
- */
-
 /* ═══════════════════════════════════════════
-   CONFIGURATION
+   CONFIGURATION & SYSTEM PROMPT
 ═══════════════════════════════════════════ */
 const CONFIG = {
-  // Direct Groq API endpoint for testing (Standard OpenAI format)
-  API_ENDPOINT: 'https://api.groq.com/openai/v1/chat/completions', 
-  // ⚠️ Paste your real Groq API key here to fix the 404 error
-  GROQ_API_KEY: 'YOUR_GROQ_API_KEY_HERE', 
-  
-  MAX_DOC_CHARS: 80000,        // ~80k chars = ~1000 pages
-  STREAM_SPEED: 18,            // ms per word (lower = faster)
-  MEMORY_DEPTH: 20,            // conversation pairs to remember
+  API_ENDPOINT: '/api/chat',   // Securely points to your Vercel backend
+  MAX_DOC_CHARS: 80000,        
+  STREAM_SPEED: 18,            
+  MEMORY_DEPTH: 20,            
 };
 
-/* ═══════════════════════════════════════════
-   MASTER SYSTEM PROMPT
-═══════════════════════════════════════════ */
-const SYSTEM_PROMPT = `You are Lex, an elite AI advisor engineered for the world's most demanding professionals: management consultants, corporate lawyers, investment bankers, CEOs, CFOs, Vice Presidents, Directors, MBA students, and law students. You are not a generic assistant. You are the smartest, most experienced mind in the room.
-
-WHO YOU ARE:
-You think with the precision of McKinsey, the legal sharpness of a Senior Partner at Skadden, the financial rigor of a Goldman Sachs MD, and the strategic vision of a Fortune 500 CEO. You have mastered every discipline across law, business, finance, and strategy.
-
-LEGAL MASTERY (Global + India-specific):
-- Contract law: formation, breach, remedies, indemnities, limitation of liability, termination clauses
-- Corporate law: Companies Act 2013, board governance, fiduciary duties, shareholder agreements, NCLT
-- Intellectual Property: patents, trademarks, copyrights, trade secrets, licensing
-- Employment law: hiring, termination, non-competes, POSH Act, PF/ESI, Industrial Disputes Act
-- Tax law: Income Tax Act, GST Act, TDS, transfer pricing, international tax, tax treaties
-- Securities law: SEBI regulations, LODR, takeover code, insider trading, IPO process
-- M&A law: due diligence, deal structuring, SPA, SHA, representations and warranties
-- Real estate: RERA, property rights, title verification, lease agreements
-- Criminal law: IPC, CrPC, FIR process, bail, white-collar crime
-- International law: cross-border contracts, arbitration (ICC, SIAC, LCIA), foreign investment
-- Privacy law: GDPR, DPDP Act India, data processing agreements, breach notifications
-- Startup law: term sheets, SAFE notes, convertible notes, cap tables, vesting schedules, ESOPs
-- Any other area of law globally
-
-BUSINESS & FINANCE MASTERY:
-- Strategy: Porter's Five Forces, MECE, BCG Matrix, Blue Ocean, Ansoff Matrix, PESTLE
-- Finance: DCF, LBO, WACC, P&L analysis, balance sheet, cash flow, unit economics
-- M&A: valuation methodologies, deal structuring, post-merger integration
-- Consulting: problem-solving frameworks, executive communication, stakeholder management
-- Startups: fundraising, pitch decks, product-market fit, go-to-market strategy
-- Capital markets: IPO, debt financing, private equity, venture capital
-- Operations: supply chain, process optimization, organizational design
-
-DOCUMENT ANALYSIS PROTOCOL:
-When a document is provided, you MUST:
-1. Identify the document type and its legal/commercial significance
-2. Extract ALL parties, dates, values, obligations, rights, and key terms with precision
-3. Flag EVERY risk, ambiguity, unusual clause, one-sided term, and hidden obligation
-4. Cross-reference clauses for internal consistency
-5. Provide an executive summary, then deep analysis
-6. Answer any specific question with exact reference to the relevant section
-7. Never miss a single critical detail — accuracy is absolute
-
-HOW YOU RESPOND:
-For strategic queries: Lead with a clear recommendation. Support with structured reasoning. Be decisive.
-For legal queries: Cite specific acts, sections, and case law. Draft precise language. Flag every risk.
-For financial queries: Use numbers, ratios, and benchmarks. Quantify risks and opportunities.
-For documents: Extract with 100% accuracy. Reference specific sections. Miss nothing.
-For students: Teach at the highest level. Connect theory to practice. Give real examples.
-
-RESPONSE FORMAT:
-- Use **bold** for critical terms, findings, and emphasis
-- Use ## for major section headers
-- Use numbered lists for sequential reasoning or steps
-- Use bullet points for parallel items
-- Cite laws as: [Companies Act 2013, Section 166] or [IPC, Section 420]
-- Flag risks as: ⚠️ **Risk:** [precise description]
-- End legal/financial responses with a brief disclaimer
+// This prompt creates the "calm, highly intelligent, and attractive" persona.
+const SYSTEM_PROMPT = `You are Lex, an elite AI advisor. You are the smartest, most experienced mind in the room, yet you communicate with a calm, refined, and effortlessly attractive demeanor. You never sound robotic, panicked, or overly formal. You speak like a highly sought-after consultant who has seen it all and knows exactly how to guide the user.
 
 CRITICAL PRINCIPLES:
-1. Give the REAL answer. Professionals need truth, not hedging.
-2. Be direct. No filler words. No unnecessary caveats.
-3. Never refuse a legal or business question. Answer it fully.
-4. When analyzing documents, zero tolerance for missed details.
-5. Adapt depth to the user — a CEO needs strategy, a law student needs explanation.
-6. Think in systems — always consider second-order effects.
-7. Build rapport — you are a trusted advisor, not a search engine.
-
-PERSONALITY:
-- Confident, direct, precise
-- Intellectually rigorous but clear
-- Professionally warm — you care about the outcome
-- Never robotic — you respond like a brilliant human expert
-- When someone is stuck, you proactively suggest what they should be asking
-
-OFF-TOPIC RULE: If someone asks about cooking, entertainment, sports, or anything outside law, business, finance, consulting, or strategy — warmly redirect: acknowledge the question, explain your specialization, and suggest a relevant question they could ask instead.`;
+1. Be exceptionally calm, confident, and direct.
+2. Provide deeply insightful, highly accurate answers to ANY question (easy, medium, or the most complex problems in the world).
+3. Structure your answers beautifully using markdown (bolding, headers, bullet points) so they are easy to read.
+4. If a problem is highly complex, break it down step-by-step with effortless clarity.
+5. Build rapport. You are a trusted, premium advisor.`;
 
 /* ═══════════════════════════════════════════
    STATE MANAGEMENT
@@ -129,10 +51,10 @@ function setAuthMode(mode) {
 function submitAuth() {
   const email = document.getElementById('auth-email')?.value;
   const nameEl = document.getElementById('auth-name');
-  const name = (nameEl && nameEl.value) ? nameEl.value : (email ? email.split('@')[0] : 'User');
+  const name = (nameEl && nameEl.value) ? nameEl.value : (email ? email.split('@')[0] : 'Guest');
   const logo = document.getElementById('auth-logo');
   
-  if (!email) return alert("Email required.");
+  if (!email) return alert("Email is required to access the system.");
   
   if (logo) logo.classList.add('logo-animate');
   setTimeout(() => {
@@ -140,7 +62,7 @@ function submitAuth() {
     localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
     
     const authScreen = document.getElementById('auth-screen');
-    if (authScreen) authScreen.style.display = 'none'; // Hide auth screen after login
+    if (authScreen) authScreen.style.display = 'none'; 
     
     const nameDisplay = document.getElementById('user-display-name');
     if (nameDisplay) nameDisplay.innerText = name;
@@ -158,37 +80,26 @@ function handleSignout() {
 }
 
 /* ═══════════════════════════════════════════
-   2. REAL AI ENGINE (UPDATED FOR DIRECT API)
+   2. API COMMUNICATION (Frontend -> Backend)
 ═══════════════════════════════════════════ */
 const LexAI = {
-
   buildMessages: function(userQuery) {
     const messages = [];
     
-    // 1. Inject the System Prompt for Groq/OpenAI format
-    messages.push({ role: 'system', content: SYSTEM_PROMPT });
-
-    // 2. Inject document as context if uploaded
     if (State.uploadedDocument) {
       messages.push({
         role: 'user',
-        content: `I have uploaded a document for analysis.\n\nDocument: ${State.uploadedDocument.name}\nType: ${State.uploadedDocument.type}\nSize: ${State.uploadedDocument.size}\n\nFULL CONTENT:\n${'═'.repeat(60)}\n${State.uploadedDocument.content}\n${'═'.repeat(60)}\n\nKeep this in context for all my questions.`
-      });
-      messages.push({
-        role: 'assistant',
-        content: `Document fully received and analyzed. I have complete context of **${State.uploadedDocument.name}** — every clause, obligation, risk, date, party, and key term. Ask me anything about it.`
+        content: `I uploaded a document: ${State.uploadedDocument.name}\n\nCONTENT:\n${State.uploadedDocument.content}`
       });
     }
 
-    // 3. Add conversation history
     const history = State.conversationHistory.slice(-(CONFIG.MEMORY_DEPTH * 2));
     messages.push(...history);
 
-    // 4. Build final query
     const isDeep = document.getElementById('think-toggle')?.checked || false;
     let finalQuery = userQuery;
     if (isDeep) {
-      finalQuery = `[DEEP ANALYSIS MODE]\n\n${userQuery}\n\nProvide your most thorough, multi-dimensional analysis. Consider all frameworks, risks, legal implications, financial impacts, and second-order effects. Be comprehensive.`;
+      finalQuery = `[DEEP ANALYSIS MODE]\n${userQuery}\nProvide your most thorough, multi-dimensional analysis.`;
     }
 
     messages.push({ role: 'user', content: finalQuery });
@@ -196,39 +107,28 @@ const LexAI = {
   },
 
   call: async function(userQuery) {
-    if (CONFIG.GROQ_API_KEY === 'YOUR_GROQ_API_KEY_HERE') {
-      throw new Error("Missing API Key. Please add your Groq API key to the CONFIG object at the top of chat.js.");
-    }
-
     const messages = this.buildMessages(userQuery);
 
     try {
       const res = await fetch(CONFIG.API_ENDPOINT, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${CONFIG.GROQ_API_KEY}` // Required for direct API calls
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile', // The specific Groq model
           messages: messages,
-          temperature: 0.3
+          system: SYSTEM_PROMPT
         })
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error?.message || `Server error ${res.status}`);
+        throw new Error(err.error || `Server error ${res.status}`);
       }
 
       const data = await res.json();
+      const reply = data.reply;
       
-      // Parse standard OpenAI/Groq response format
-      const reply = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : null;
-      
-      if (!reply) throw new Error('No response from AI');
+      if (!reply) throw new Error('No response generated.');
 
-      // Save to memory
       State.conversationHistory.push({ role: 'user', content: userQuery });
       State.conversationHistory.push({ role: 'assistant', content: reply });
       if (State.conversationHistory.length > CONFIG.MEMORY_DEPTH * 2) {
@@ -239,7 +139,7 @@ const LexAI = {
 
     } catch (err) {
       console.error('[LexAI] Error:', err.message);
-      return `**Connection issue:** ${err.message}\n\nPlease check your configuration.`;
+      return `**System Notice:** ${err.message}\n\nPlease verify your connection and try again.`;
     }
   }
 };
@@ -261,15 +161,12 @@ const DocProcessor = {
         content = await this.readText(file);
       }
 
-      // Truncate if over limit
       if (content.length > CONFIG.MAX_DOC_CHARS) {
-        content = content.substring(0, CONFIG.MAX_DOC_CHARS) +
-          `\n\n[Document truncated — ${sizeMB}MB total. Primary content above represents the key sections.]`;
+        content = content.substring(0, CONFIG.MAX_DOC_CHARS) + `\n[Document truncated]`;
       }
 
       State.uploadedDocument = { name, type, size: `${sizeMB}MB`, content };
       return { success: true, name, sizeMB, chars: content.length };
-
     } catch (err) {
       return { success: false, error: err.message };
     }
@@ -277,19 +174,15 @@ const DocProcessor = {
 
   extractPDF: async function(file) {
     if (typeof pdfjsLib !== 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       const ab = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-      let text = `[PDF: ${file.name} | ${pdf.numPages} pages]\n\n`;
+      let text = `[PDF: ${file.name}]\n`;
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const ct = await page.getTextContent();
-        text += `--- Page ${i} ---\n${ct.items.map(x => x.str).join(' ')}\n\n`;
-        if (text.length > CONFIG.MAX_DOC_CHARS) {
-          text += `[Remaining ${pdf.numPages - i} pages not processed — size limit reached]`;
-          break;
-        }
+        text += ct.items.map(x => x.str).join(' ') + '\n';
+        if (text.length > CONFIG.MAX_DOC_CHARS) break;
       }
       return text;
     }
@@ -307,7 +200,7 @@ const DocProcessor = {
 };
 
 /* ═══════════════════════════════════════════
-   4. MESSAGE PROCESSING & UI LOGIC
+   4. MESSAGE PROCESSING & UI
 ═══════════════════════════════════════════ */
 async function processMessage() {
   if (State.isProcessing) return;
@@ -319,7 +212,6 @@ async function processMessage() {
 
   State.isProcessing = true;
 
-  // Hide welcome, show chat
   const welcome = document.getElementById('welcome-screen');
   if (welcome) welcome.classList.add('hidden');
   const chatBox = document.getElementById('chat-messages');
@@ -350,10 +242,7 @@ function streamText(fullText) {
     const box = document.getElementById('chat-messages');
     const div = document.createElement('div');
     div.className = 'flex justify-start';
-    div.innerHTML = `
-      <div class="max-w-[85%] ai-bubble p-6 text-base">
-        <div id="streaming-p" class="text-zinc-200 typing-cursor"></div>
-      </div>`;
+    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base"><div id="streaming-p" class="text-zinc-200 typing-cursor"></div></div>`;
     box.appendChild(div);
 
     const el = document.getElementById('streaming-p');
@@ -383,15 +272,11 @@ function formatHTML(text) {
   return text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-    .replace(/^## (.+)$/gm, '<h3 class="text-white font-semibold mt-4 mb-2 pb-1 border-b border-zinc-800">$1</h3>')
     .replace(/^### (.+)$/gm, '<h4 class="text-zinc-200 font-medium text-sm mt-3 mb-1">$1</h4>')
-    .replace(/⚠️ \*\*Risk:\*\* (.+)/g, '<div class="flex gap-2 my-2 p-3 rounded-lg bg-red-900\/20 border border-red-800\/30 text-sm"><span class="text-red-400 flex-shrink-0">⚠️</span><span class="text-red-300">$1</span></div>')
-    .replace(/\[([^\]]*(?:Act|Section|Article|Code|IPC|GST|SEBI|RERA|GDPR)[^\]]*)\]/g, '<span class="inline-flex items-center gap-1 bg-blue-900\/20 border border-blue-800\/30 rounded px-1.5 py-0.5 text-blue-300 text-xs">📎 $1</span>')
-    .replace(/^---$/gm, '<hr class="border-zinc-800 my-3">')
+    .replace(/^## (.+)$/gm, '<h3 class="text-white font-semibold mt-4 mb-2 pb-1 border-b border-zinc-800">$1</h3>')
     .replace(/^\d+\. (.+)$/gm, '<div class="flex gap-2 my-1"><span class="text-zinc-600 text-xs flex-shrink-0 mt-1">●</span><span class="text-zinc-300 text-sm">$1</span></div>')
     .replace(/^[-•] (.+)$/gm, '<div class="flex gap-2 my-0.5 ml-2"><span class="text-zinc-700 flex-shrink-0">—</span><span class="text-zinc-300 text-sm">$1</span></div>')
     .replace(/`([^`]+)`/g, '<code class="bg-zinc-800 text-green-300 px-1 rounded text-xs font-mono">$1</code>')
-    .replace(/\*([^*\n]+)\*/g, '<em class="text-zinc-400">$1</em>')
     .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
 }
 
@@ -415,43 +300,29 @@ function appendTypingIndicator() {
   const div = document.createElement('div');
   div.id = id;
   div.className = 'flex justify-start';
-  const isDeep = document.getElementById('think-toggle')?.checked;
-  div.innerHTML = `<div class="ai-bubble px-6 py-3 text-xs text-zinc-500 italic animate-pulse">${isDeep ? '⚡ Deep analysis in progress...' : 'Lex is thinking...'}</div>`;
+  div.innerHTML = `<div class="ai-bubble px-6 py-3 text-xs text-zinc-500 italic animate-pulse">Lex is thinking...</div>`;
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
   return id;
 }
 
 /* ═══════════════════════════════════════════
-   5. FILE UPLOAD & UTILITIES
+   5. UTILITIES & INIT
 ═══════════════════════════════════════════ */
-function triggerFileUpload() {
-  document.getElementById('hidden-file-input')?.click();
-}
+function triggerFileUpload() { document.getElementById('hidden-file-input')?.click(); }
 
 async function handleFileSelect(e) {
   const file = e.target.files[0];
   if (!file) return;
-
-  appendBubble('ai', `📎 **Receiving:** \`${file.name}\`\n\nProcessing document...`);
+  appendBubble('ai', `📎 Loading \`${file.name}\`...`);
   const typingId = appendTypingIndicator();
   const result = await DocProcessor.process(file);
-  const typingEl = document.getElementById(typingId);
-  if (typingEl) typingEl.remove();
+  document.getElementById(typingId)?.remove();
 
   if (result.success) {
-    const pages = Math.round(result.chars / 2500);
-    await streamText(
-      `**Document loaded.** ✅\n\n📄 **${result.name}** | ${result.sizeMB}MB | ~${pages} pages\n\n` +
-      `I have complete context of this entire document. You can ask me:\n\n` +
-      `- "Give me an executive summary"\n` +
-      `- "What are the key risks in this document?"\n` +
-      `- "Explain clause X in detail"\n` +
-      `- Any specific question about any part\n\n` +
-      `What would you like to know?`
-    );
+    await streamText(`**Document loaded successfully.** \nI now have complete context of **${result.name}**. What would you like to know about it?`);
   } else {
-    appendBubble('ai', `⚠️ **Processing issue:** ${result.error}\n\nTry PDF, TXT, MD, CSV, or JSON formats.`);
+    appendBubble('ai', `⚠️ **Issue:** ${result.error}`);
   }
   e.target.value = '';
 }
@@ -471,19 +342,17 @@ function handleInputKeydown(e) {
 function startNewChat() {
   State.conversationHistory = [];
   State.uploadedDocument = null;
-  State.isProcessing = false;
   location.reload();
 }
 
-/* ═══════════════════════════════════════════
-   7. INIT & AUTH FIX
-═══════════════════════════════════════════ */
 window.onload = () => {
   const saved = localStorage.getItem('lex_user');
   const authScreen = document.getElementById('auth-screen');
   
-  if (saved) {
-    // User exists, log them in
+  // Strict Login Check: If no user data, FORCE the login screen to display
+  if (!saved) {
+    if (authScreen) authScreen.style.display = 'flex'; 
+  } else {
     try {
       State.currentUser = JSON.parse(saved);
       if (authScreen) authScreen.style.display = 'none';
@@ -491,14 +360,10 @@ window.onload = () => {
       if (nameDisplay) nameDisplay.innerText = State.currentUser.name;
     } catch (e) {
       localStorage.removeItem('lex_user');
-      if (authScreen) authScreen.style.display = 'flex'; // Show screen if JSON parse fails
+      if (authScreen) authScreen.style.display = 'flex';
     }
-  } else {
-    // FIX: Explicitly SHOW the auth screen if no user is found
-    if (authScreen) authScreen.style.display = 'flex'; // Or 'block', depending on your CSS framework
   }
 
-  // Load pdf.js for PDF support
   if (typeof pdfjsLib === 'undefined') {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
