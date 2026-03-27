@@ -14,10 +14,10 @@ const SYSTEM_PROMPT = `You are Lex, an elite AI advisor. You are the smartest, m
 CRITICAL PRINCIPLES:
 1. Be exceptionally calm, confident, and direct.
 2. Provide deeply insightful, highly accurate answers to ANY question (easy, medium, or the most complex problems in the world).
-3. Structure your answers beautifully using markdown (bolding, headers, bullet points) so they are easy to read.
+3. Structure your answers beautifully using markdown.
 4. If a problem is highly complex, break it down step-by-step with effortless clarity.
 5. Build rapport. You are a trusted, premium advisor.
-6. ANTI-HALLUCINATION PROTOCOL: If the user provides a vague or incomplete prompt (e.g., "Tell me", "Hi", "Help"), do NOT generate repetitive characters, asterisks, or random information. Politely and concisely ask them to clarify how you can assist them today.
+6. ANTI-HALLUCINATION PROTOCOL: If the user provides a vague or incomplete prompt, do NOT generate repetitive characters. Politely ask them to clarify.
 
 DYNAMIC LIABILITY PROTOCOL (CRITICAL):
 You must analyze every single user query to determine if it involves legal advice, compliance, sensitive corporate data, or high-stakes financial investments.
@@ -35,7 +35,6 @@ const State = {
   isProcessing: false,
 };
 
-// Generates a unique ID for new chats
 function generateId() {
     return Math.random().toString(36).substring(2, 15);
 }
@@ -59,15 +58,15 @@ const SessionManager = {
     },
 
     addMessage: function(role, content) {
-        // If no active session, create one
         if (!State.currentSessionId) {
             const newSession = {
                 id: generateId(),
-                title: content.substring(0, 30) + (content.length > 30 ? '...' : ''), // Auto-title
+                title: content.substring(0, 30) + (content.length > 30 ? '...' : ''),
                 messages: [],
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                isPinned: false
             };
-            State.sessions.unshift(newSession); // Add to top
+            State.sessions.unshift(newSession); 
             State.currentSessionId = newSession.id;
         }
 
@@ -82,18 +81,16 @@ const SessionManager = {
         State.currentSessionId = id;
         const session = this.getCurrentSession();
         
-        // UI Reset
         document.getElementById('welcome-screen')?.classList.add('hidden');
         const chatBox = document.getElementById('chat-messages');
         chatBox.classList.remove('hidden');
         chatBox.innerHTML = ''; 
 
-        // Repopulate UI
         session.messages.forEach(msg => {
-            appendBubble(msg.role, msg.content, true); // true = skip animation
+            appendBubble(msg.role, msg.content, true); 
         });
 
-        if(window.innerWidth < 768) toggleSidebar(); // Close sidebar on mobile
+        if(window.innerWidth < 768) toggleSidebar(); 
         this.renderHistory();
     },
 
@@ -109,32 +106,99 @@ const SessionManager = {
         this.renderHistory();
     },
 
+    // Chat Actions
+    togglePin: function(id) {
+        const s = State.sessions.find(x => x.id === id);
+        if(s) { s.isPinned = !s.isPinned; this.saveAll(); }
+    },
+    
+    rename: function(id) {
+        const s = State.sessions.find(x => x.id === id);
+        if(s) {
+            const newName = prompt("Rename chat:", s.title);
+            if(newName && newName.trim()) {
+                s.title = newName.trim();
+                this.saveAll();
+            }
+        }
+    },
+    
+    deleteChat: function(id) {
+        if(confirm("Delete this conversation?")) {
+            State.sessions = State.sessions.filter(x => x.id !== id);
+            if(State.currentSessionId === id) this.createNew();
+            this.saveAll();
+        }
+    },
+    
+    share: function(id) {
+        const s = State.sessions.find(x => x.id === id);
+        if(s) {
+            const text = s.messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join('\n\n---\n\n');
+            navigator.clipboard.writeText(text).then(() => alert('Chat copied to clipboard!'));
+        }
+        closeAllMenus();
+    },
+
     renderHistory: function() {
         const list = document.getElementById('history-list');
         if (!list) return;
 
-        // Keep the "Recents" header, remove old items
         list.innerHTML = `<p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-bold mb-3 px-2">Recents</p>`;
 
-        State.sessions.forEach(session => {
+        // Sort: Pinned first, then by date
+        const sortedSessions = [...State.sessions].sort((a, b) => {
+            if (a.isPinned === b.isPinned) return new Date(b.date) - new Date(a.date);
+            return a.isPinned ? -1 : 1;
+        });
+
+        sortedSessions.forEach(session => {
             const isActive = session.id === State.currentSessionId;
-            // The Dark Blue active bubble styling (like Gemini)
             const activeClass = isActive 
                 ? 'bg-blue-900/20 text-blue-500 border-blue-500/30' 
                 : 'border-transparent text-[var(--text-main)] hover:bg-[var(--hover-bg)]';
+            const pinIcon = session.isPinned ? '📌 ' : '';
 
-            const btn = document.createElement('button');
-            btn.className = `w-full text-left p-3 rounded-xl text-sm font-medium border transition-all truncate btn-press ${activeClass}`;
-            btn.innerText = session.title;
-            btn.onclick = () => this.loadSession(session.id);
-            list.appendChild(btn);
+            // The container uses Tailwind "group" to show the 3 dots on hover (PC) or always (Mobile)
+            const itemHtml = `
+            <div class="relative group flex items-center mb-1">
+                <button onclick="SessionManager.loadSession('${session.id}')" class="w-full text-left p-3 pr-10 rounded-xl text-sm font-medium border transition-all truncate btn-press ${activeClass}">
+                    ${pinIcon}${session.title}
+                </button>
+                
+                <button onclick="toggleContextMenu(event, '${session.id}')" class="absolute right-2 p-2 text-[var(--text-muted)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:text-[var(--text-main)] rounded-lg">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="4" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="8" cy="12" r="1"/></svg>
+                </button>
+                
+                <div id="menu-${session.id}" class="context-menu hidden absolute right-0 top-10 w-36 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-xl z-50 overflow-hidden text-sm">
+                    <div class="hover:bg-[var(--hover-bg)] p-2.5 cursor-pointer transition-colors" onclick="SessionManager.share('${session.id}')">Share</div>
+                    <div class="hover:bg-[var(--hover-bg)] p-2.5 cursor-pointer transition-colors" onclick="SessionManager.rename('${session.id}')">Rename</div>
+                    <div class="hover:bg-[var(--hover-bg)] p-2.5 cursor-pointer transition-colors" onclick="SessionManager.togglePin('${session.id}')">${session.isPinned ? 'Unpin' : 'Pin'}</div>
+                    <div class="hover:bg-red-500/10 text-red-500 p-2.5 cursor-pointer transition-colors" onclick="SessionManager.deleteChat('${session.id}')">Delete</div>
+                </div>
+            </div>`;
+            
+            list.insertAdjacentHTML('beforeend', itemHtml);
         });
     }
 };
 
 /* ═══════════════════════════════════════════
-   1. AUTHENTICATION & UI
+   1. AUTHENTICATION & UI LOGIC
 ═══════════════════════════════════════════ */
+function openAuthScreen() {
+    const screen = document.getElementById('auth-screen');
+    screen.classList.remove('hidden');
+    void screen.offsetWidth; // Trigger reflow
+    screen.classList.remove('opacity-0');
+}
+
+function closeAuthScreen() {
+    const screen = document.getElementById('auth-screen');
+    screen.classList.add('opacity-0');
+    setTimeout(() => screen.classList.add('hidden'), 400);
+}
+
 function setAuthMode(mode) {
   const signupFields = document.getElementById('signup-fields');
   const loginTab = document.getElementById('login-tab');
@@ -153,21 +217,21 @@ function setAuthMode(mode) {
 function submitAuth() {
   const email = document.getElementById('auth-email')?.value;
   const nameEl = document.getElementById('auth-name');
-  const name = (nameEl && nameEl.value) ? nameEl.value : (email ? email.split('@')[0] : 'Guest');
+  const name = (nameEl && nameEl.value) ? nameEl.value : (email ? email.split('@')[0] : 'User');
   
-  if (!email) return alert("Email is required to access the system.");
+  if (!email) return alert("Email is required.");
   
   State.currentUser = { name, email };
   localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
   
-  const authScreen = document.getElementById('auth-screen');
-  if (authScreen) {
-      authScreen.style.opacity = '0';
-      setTimeout(() => authScreen.style.display = 'none', 400); 
-  }
-  
-  const nameDisplay = document.getElementById('user-display-name');
-  if (nameDisplay) nameDisplay.innerText = name;
+  closeAuthScreen();
+  renderAppStates();
+}
+
+function handleSignout() {
+  localStorage.removeItem('lex_user');
+  State.currentUser = null;
+  renderAppStates();
 }
 
 function togglePass() {
@@ -175,21 +239,65 @@ function togglePass() {
   if (p) p.type = p.type === 'password' ? 'text' : 'password';
 }
 
-function handleSignout() {
-  localStorage.removeItem('lex_user');
-  location.reload();
+// Dynamically renders the Welcome text and Sidebar depending on auth status
+function renderAppStates() {
+    // 1. Welcome Screen
+    const welcomeContainer = document.getElementById('welcome-text-container');
+    const svgIcon = `<svg class="w-16 h-16 mb-6 text-blue-500 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
+    
+    if (State.currentUser) {
+        welcomeContainer.innerHTML = `${svgIcon}
+            <h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">Welcome, <span class="text-blue-500">${State.currentUser.name}</span>.</h1>
+            <p class="text-[var(--text-muted)] text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Deep analysis and executive intelligence at your fingertips.</p>`;
+    } else {
+        welcomeContainer.innerHTML = `${svgIcon}
+            <h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">How can I help you today?</h1>
+            <p class="text-[var(--text-muted)] text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Start chatting instantly, or log in to sync your sessions.</p>`;
+    }
+
+    // 2. Sidebar Footer
+    const sidebarFooter = document.getElementById('sidebar-footer');
+    const settingsBtn = `<button onclick="toggleSettings()" class="btn-press w-full text-left text-sm font-medium hover-effect p-2.5 rounded-lg flex items-center gap-3 transition-colors"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</button>`;
+    
+    if (State.currentUser) {
+        sidebarFooter.innerHTML = settingsBtn + `
+            <div class="px-2 py-3 mt-2 border-t border-[var(--border-color)] flex justify-between items-center">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shrink-0">${State.currentUser.name.charAt(0).toUpperCase()}</div>
+                    <span class="text-sm font-semibold truncate">${State.currentUser.name}</span>
+                </div>
+                <button onclick="handleSignout()" class="text-[var(--text-muted)] hover:text-red-500 transition-colors p-2" title="Sign Out">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                </button>
+            </div>`;
+    } else {
+        sidebarFooter.innerHTML = settingsBtn + `
+            <button onclick="openAuthScreen()" class="btn-press mt-2 w-full py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] hover:bg-[var(--hover-bg)] transition-all text-sm font-semibold flex items-center justify-center gap-2">
+                Sign Up / Log In
+            </button>`;
+    }
 }
 
 /* ═══════════════════════════════════════════
-   2. SETTINGS & THEME LOGIC
+   2. UI INTERACTION HELPERS
 ═══════════════════════════════════════════ */
+function toggleContextMenu(event, id) {
+    event.stopPropagation();
+    closeAllMenus();
+    const menu = document.getElementById(`menu-${id}`);
+    if (menu) menu.classList.remove('hidden');
+}
+
+function closeAllMenus() {
+    document.querySelectorAll('.context-menu').forEach(menu => menu.classList.add('hidden'));
+}
+document.addEventListener('click', closeAllMenus); // Global click listener to close dropdowns
+
 function toggleSettings() {
     const modal = document.getElementById('settings-modal');
     const card = document.getElementById('settings-card');
-    
     if (modal.classList.contains('hidden')) {
         modal.classList.remove('hidden');
-        // Trigger reflow for transition
         void modal.offsetWidth;
         modal.classList.remove('opacity-0');
         card.classList.remove('scale-95');
@@ -203,7 +311,6 @@ function toggleSettings() {
 function toggleTheme() {
     const html = document.documentElement;
     const btn = document.getElementById('theme-btn');
-    
     if (html.classList.contains('dark')) {
         html.classList.remove('dark');
         btn.innerText = 'Dark Mode';
@@ -224,7 +331,6 @@ function clearAllData() {
     }
 }
 
-// Load Saved Theme
 (function loadTheme() {
     const savedTheme = localStorage.getItem('lex_theme');
     const html = document.documentElement;
@@ -240,14 +346,12 @@ function clearAllData() {
 const LexAI = {
   buildMessages: function(userQuery) {
     const messages = [];
-    
     if (State.uploadedDocument) {
       messages.push({ role: 'user', content: `I uploaded a document: ${State.uploadedDocument.name}\n\nCONTENT:\n${State.uploadedDocument.content}` });
     }
 
     const session = SessionManager.getCurrentSession();
     if (session) {
-        // Grab last 10 pairs of history for context
         const history = session.messages.slice(-20);
         messages.push(...history);
     }
@@ -262,7 +366,6 @@ const LexAI = {
 
   call: async function(userQuery) {
     const messages = this.buildMessages(userQuery);
-
     try {
       const res = await fetch(CONFIG.API_ENDPOINT, {
         method: 'POST',
@@ -291,13 +394,11 @@ const LexAI = {
 /* ═══════════════════════════════════════════
    4. DOCUMENT PROCESSOR
 ═══════════════════════════════════════════ */
-// ... (Keeping exact same DocProcessor as before to save space)
 const DocProcessor={process:async function(e){const t=e.name,n=e.type||"",r=(e.size/1048576).toFixed(2);let s="";try{if("application/pdf"===n||t.endsWith(".pdf"))s=await this.extractPDF(e);else s=await this.readText(e);return s.length>CONFIG.MAX_DOC_CHARS&&(s=s.substring(0,CONFIG.MAX_DOC_CHARS)+"\n[Document truncated]"),State.uploadedDocument={name:t,type:n,size:`${r}MB`,content:s},{success:!0,name:t,sizeMB:r,chars:s.length}}catch(e){return{success:!1,error:e.message}}},extractPDF:async function(e){if("undefined"!=typeof pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";const t=await e.arrayBuffer(),n=await pdfjsLib.getDocument({data:t}).promise;let r=`[PDF: ${e.name}]\n`;for(let e=1;e<=n.numPages;e++){const t=await n.getPage(e),s=await t.getTextContent();if(r+=s.items.map((e=>e.str)).join(" ")+"\n",r.length>CONFIG.MAX_DOC_CHARS)break}return r}return await this.readText(e)},readText:function(e){return new Promise(((t,n)=>{const r=new FileReader;r.onload=e=>t(e.target.result),r.onerror=()=>n(new Error("Could not read file")),r.readAsText(e)}))}};
 
 /* ═══════════════════════════════════════════
    5. UI RENDERING & STREAMING
 ═══════════════════════════════════════════ */
-// SVG Logo Helper
 const LexSVG = `<svg class="w-6 h-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
 
 async function processMessage() {
@@ -338,7 +439,6 @@ function streamText(fullText) {
     const div = document.createElement('div');
     div.className = 'flex justify-start w-full anim-fade-up';
     
-    // Notice the LexSVG is locked in place now (static) next to the text
     div.innerHTML = `
       <div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full">
          <div class="mt-4 flex-shrink-0">${LexSVG}</div>
@@ -414,7 +514,6 @@ function appendTypingIndicator() {
   div.id = id;
   div.className = 'flex justify-start w-full anim-fade-up';
   
-  // Notice the ai-thinking-logo class causing it to spin/pulse
   div.innerHTML = `
       <div class="flex items-center gap-4 max-w-[95%] md:max-w-[85%] w-full">
          <div class="ai-thinking-logo flex-shrink-0">${LexSVG}</div>
@@ -455,24 +554,18 @@ function handleInputKeydown(e) {
 
 window.onload = () => {
   const saved = localStorage.getItem('lex_user');
-  const authScreen = document.getElementById('auth-screen');
-  
-  if (!saved) {
-    if (authScreen) authScreen.style.display = 'flex'; 
-  } else {
-    try {
-      State.currentUser = JSON.parse(saved);
-      if (authScreen) authScreen.style.display = 'none';
-      const nameDisplay = document.getElementById('user-display-name');
-      if (nameDisplay) nameDisplay.innerText = State.currentUser.name;
-    } catch (e) {
-      localStorage.removeItem('lex_user');
-      if (authScreen) authScreen.style.display = 'flex';
-    }
+  if (saved) {
+    try { State.currentUser = JSON.parse(saved); } 
+    catch (e) { localStorage.removeItem('lex_user'); }
   }
 
-  SessionManager.init(); // Boot up the history engine
+  // 1. Setup Auth & Welcome States
+  renderAppStates();
+  
+  // 2. Setup History
+  SessionManager.init(); 
 
+  // Load PDF parser
   if (typeof pdfjsLib === 'undefined') {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
