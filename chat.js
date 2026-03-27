@@ -10,7 +10,7 @@ const CONFIG = {
   MEMORY_DEPTH: 20,            
 };
 
-// The upgraded Brain with the legal disclaimer protocol
+// The upgraded Brain with the Dynamic Liability Protocol
 const SYSTEM_PROMPT = `You are Lex, an elite AI advisor. You are the smartest, most experienced mind in the room, yet you communicate with a calm, refined, and effortlessly attractive demeanor. You never sound robotic, panicked, or overly formal. You speak like a highly sought-after consultant who has seen it all and knows exactly how to guide the user.
 
 CRITICAL PRINCIPLES:
@@ -20,11 +20,17 @@ CRITICAL PRINCIPLES:
 4. If a problem is highly complex, break it down step-by-step with effortless clarity.
 5. Build rapport. You are a trusted, premium advisor.
 
-LIABILITY PROTOCOL (CRITICAL):
-If the user asks a question involving legal advice, drafting legal contracts, compliance, financial investments, tax implications, or sensitive corporate actions, you MUST append this exact markdown text at the very end of your response, separated by a horizontal rule:
+DYNAMIC LIABILITY PROTOCOL (CRITICAL):
+You must analyze every single user query to determine if it involves:
+- Legal advice, compliance, or contract drafting
+- Very sensitive or deeply personal information
+- Governmental, regulatory, or tax matters
+- Financial investments or high-stakes business decisions
 
----
-*<small>⚠️ **Disclaimer:** This analysis is provided for educational and strategic purposes only and does not constitute official legal, financial, or tax advice. Lex is an AI, and while highly capable, its outputs may contain inaccuracies. Please consult with certified legal counsel or a qualified professional before executing binding agreements or making critical business decisions.</small>*`;
+If (and ONLY if) the query falls into these high-risk categories, you MUST generate a custom, context-specific disclaimer at the very end of your response. Do NOT use a generic disclaimer. Tailor the warning specifically to the user's exact question and the inherent real-world risks of that specific topic.
+
+When you write this dynamic disclaimer, it MUST be the very last thing in your response, and it MUST be formatted exactly like this on a new line:
+⚠️ **[Specific Topic] Disclaimer:** [Your custom tailored disclaimer text here]`;
 
 /* ═══════════════════════════════════════════
    STATE MANAGEMENT
@@ -206,7 +212,7 @@ const DocProcessor = {
 };
 
 /* ═══════════════════════════════════════════
-   4. MESSAGE PROCESSING & UI (UPDATED FOR SCROLL FIX)
+   4. MESSAGE PROCESSING & UI
 ═══════════════════════════════════════════ */
 async function processMessage() {
   if (State.isProcessing) return;
@@ -248,7 +254,7 @@ function streamText(fullText) {
     const box = document.getElementById('chat-messages');
     const div = document.createElement('div');
     div.className = 'flex justify-start';
-    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base"><div id="streaming-p" class="text-zinc-200 typing-cursor"></div></div>`;
+    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base w-full"><div id="streaming-p" class="text-zinc-200 typing-cursor w-full"></div></div>`;
     box.appendChild(div);
 
     const el = document.getElementById('streaming-p');
@@ -261,7 +267,6 @@ function streamText(fullText) {
         current += (i > 0 ? ' ' : '') + words[i];
         el.innerHTML = formatHTML(current) + '<span class="typing-cursor">|</span>';
         i++;
-        // Auto-scroll removed from here so it stays at the top of the answer
       } else {
         clearInterval(tick);
         el.innerHTML = formatHTML(fullText);
@@ -276,6 +281,8 @@ function streamText(fullText) {
 function formatHTML(text) {
   return text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    // This line creates the beautiful custom Disclaimer Box
+    .replace(/^⚠️ \*\*(.*?)\*\*(.*)$/gm, '<div class="mt-8 p-4 rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-400 text-sm leading-relaxed flex items-start gap-3 shadow-sm w-full"><span class="text-xl leading-none flex-shrink-0">⚠️</span> <div><strong class="text-zinc-300 font-semibold">$1</strong>$2</div></div>')
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
     .replace(/^### (.+)$/gm, '<h4 class="text-zinc-200 font-medium text-sm mt-3 mb-1">$1</h4>')
     .replace(/^## (.+)$/gm, '<h3 class="text-white font-semibold mt-4 mb-2 pb-1 border-b border-zinc-800">$1</h3>')
@@ -294,12 +301,11 @@ function appendBubble(role, text) {
   if (role === 'user') {
     div.innerHTML = `<div class="max-w-[85%] user-bubble p-4 text-sm"><p>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>`;
   } else {
-    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base"><div>${formatHTML(text)}</div></div>`;
+    div.innerHTML = `<div class="max-w-[85%] ai-bubble p-6 text-base w-full"><div>${formatHTML(text)}</div></div>`;
   }
   
   box.appendChild(div);
   
-  // ONLY scroll when the user types, not when AI types
   if (role === 'user') {
     box.scrollTop = box.scrollHeight;
   }
@@ -314,7 +320,6 @@ function appendTypingIndicator() {
   div.innerHTML = `<div class="ai-bubble px-6 py-3 text-xs text-zinc-500 italic animate-pulse">Lex is thinking...</div>`;
   box.appendChild(div);
   
-  // Keep scroll here so the user sees the "thinking" animation appear
   box.scrollTop = box.scrollHeight;
   
   return id;
@@ -363,7 +368,6 @@ window.onload = () => {
   const saved = localStorage.getItem('lex_user');
   const authScreen = document.getElementById('auth-screen');
   
-  // Strict Login Check: If no user data, FORCE the login screen to display
   if (!saved) {
     if (authScreen) authScreen.style.display = 'flex'; 
   } else {
