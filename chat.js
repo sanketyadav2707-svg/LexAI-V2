@@ -106,7 +106,6 @@ const SessionManager = {
         this.renderHistory();
     },
 
-    // Chat Actions
     togglePin: function(id) {
         const s = State.sessions.find(x => x.id === id);
         if(s) { s.isPinned = !s.isPinned; this.saveAll(); }
@@ -146,7 +145,6 @@ const SessionManager = {
 
         list.innerHTML = `<p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-bold mb-3 px-2">Recents</p>`;
 
-        // Sort: Pinned first, then by date
         const sortedSessions = [...State.sessions].sort((a, b) => {
             if (a.isPinned === b.isPinned) return new Date(b.date) - new Date(a.date);
             return a.isPinned ? -1 : 1;
@@ -159,22 +157,25 @@ const SessionManager = {
                 : 'border-transparent text-[var(--text-main)] hover:bg-[var(--hover-bg)]';
             const pinIcon = session.isPinned ? '📌 ' : '';
 
-            // The container uses Tailwind "group" to show the 3 dots on hover (PC) or always (Mobile)
             const itemHtml = `
-            <div class="relative group flex items-center mb-1">
-                <button onclick="SessionManager.loadSession('${session.id}')" class="w-full text-left p-3 pr-10 rounded-xl text-sm font-medium border transition-all truncate btn-press ${activeClass}">
+            <div class="relative group flex items-center mb-1 w-full">
+                <button onclick="SessionManager.loadSession('${session.id}')" 
+                        class="w-full text-left p-3 pr-12 rounded-xl text-sm font-medium border transition-all truncate btn-press ${activeClass}">
                     ${pinIcon}${session.title}
                 </button>
                 
-                <button onclick="toggleContextMenu(event, '${session.id}')" class="absolute right-2 p-2 text-[var(--text-muted)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:text-[var(--text-main)] rounded-lg">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="4" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="8" cy="12" r="1"/></svg>
+                <button onclick="event.stopPropagation(); toggleContextMenu(event, '${session.id}')" 
+                        class="absolute right-1 top-1/2 -translate-y-1/2 z-20 p-3 text-[var(--text-muted)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:text-[var(--text-main)] rounded-lg">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="8" cy="4" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="8" cy="12" r="1"/>
+                    </svg>
                 </button>
                 
-                <div id="menu-${session.id}" class="context-menu hidden absolute right-0 top-10 w-36 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-xl z-50 overflow-hidden text-sm">
-                    <div class="hover:bg-[var(--hover-bg)] p-2.5 cursor-pointer transition-colors" onclick="SessionManager.share('${session.id}')">Share</div>
-                    <div class="hover:bg-[var(--hover-bg)] p-2.5 cursor-pointer transition-colors" onclick="SessionManager.rename('${session.id}')">Rename</div>
-                    <div class="hover:bg-[var(--hover-bg)] p-2.5 cursor-pointer transition-colors" onclick="SessionManager.togglePin('${session.id}')">${session.isPinned ? 'Unpin' : 'Pin'}</div>
-                    <div class="hover:bg-red-500/10 text-red-500 p-2.5 cursor-pointer transition-colors" onclick="SessionManager.deleteChat('${session.id}')">Delete</div>
+                <div id="menu-${session.id}" class="context-menu hidden absolute right-2 top-12 w-40 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 overflow-hidden text-sm">
+                    <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.share('${session.id}')">Share</div>
+                    <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.rename('${session.id}')">Rename</div>
+                    <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.togglePin('${session.id}')">${session.isPinned ? 'Unpin' : 'Pin'}</div>
+                    <div class="hover:bg-red-500/10 text-red-500 p-3 cursor-pointer transition-colors" onclick="event.stopPropagation(); SessionManager.deleteChat('${session.id}')">Delete</div>
                 </div>
             </div>`;
             
@@ -189,7 +190,7 @@ const SessionManager = {
 function openAuthScreen() {
     const screen = document.getElementById('auth-screen');
     screen.classList.remove('hidden');
-    void screen.offsetWidth; // Trigger reflow
+    void screen.offsetWidth; 
     screen.classList.remove('opacity-0');
 }
 
@@ -239,9 +240,7 @@ function togglePass() {
   if (p) p.type = p.type === 'password' ? 'text' : 'password';
 }
 
-// Dynamically renders the Welcome text and Sidebar depending on auth status
 function renderAppStates() {
-    // 1. Welcome Screen
     const welcomeContainer = document.getElementById('welcome-text-container');
     const svgIcon = `<svg class="w-16 h-16 mb-6 text-blue-500 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
     
@@ -255,7 +254,6 @@ function renderAppStates() {
             <p class="text-[var(--text-muted)] text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Start chatting instantly, or log in to sync your sessions.</p>`;
     }
 
-    // 2. Sidebar Footer
     const sidebarFooter = document.getElementById('sidebar-footer');
     const settingsBtn = `<button onclick="toggleSettings()" class="btn-press w-full text-left text-sm font-medium hover-effect p-2.5 rounded-lg flex items-center gap-3 transition-colors"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</button>`;
     
@@ -291,7 +289,7 @@ function toggleContextMenu(event, id) {
 function closeAllMenus() {
     document.querySelectorAll('.context-menu').forEach(menu => menu.classList.add('hidden'));
 }
-document.addEventListener('click', closeAllMenus); // Global click listener to close dropdowns
+document.addEventListener('click', closeAllMenus); 
 
 function toggleSettings() {
     const modal = document.getElementById('settings-modal');
@@ -323,7 +321,7 @@ function toggleTheme() {
 }
 
 function clearAllData() {
-    if(confirm("Are you sure? This will delete all chat history. This action cannot be undone.")) {
+    if(confirm("Are you sure? This will delete all chat history.")) {
         localStorage.removeItem('lex_sessions');
         State.sessions = [];
         SessionManager.createNew();
@@ -513,7 +511,6 @@ function appendTypingIndicator() {
   const div = document.createElement('div');
   div.id = id;
   div.className = 'flex justify-start w-full anim-fade-up';
-  
   div.innerHTML = `
       <div class="flex items-center gap-4 max-w-[95%] md:max-w-[85%] w-full">
          <div class="ai-thinking-logo flex-shrink-0">${LexSVG}</div>
@@ -559,13 +556,9 @@ window.onload = () => {
     catch (e) { localStorage.removeItem('lex_user'); }
   }
 
-  // 1. Setup Auth & Welcome States
   renderAppStates();
-  
-  // 2. Setup History
   SessionManager.init(); 
 
-  // Load PDF parser
   if (typeof pdfjsLib === 'undefined') {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
