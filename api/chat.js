@@ -49,7 +49,6 @@ export default async function handler(req) {
     // 3. ATTEMPT 2: GEMINI (For massive PDFs, Images, or if Groq failed)
     if (process.env.GEMINI_API_KEY) {
       
-      // CRITICAL BUG FIX: Gemini crashes if roles don't alternate perfectly. This merges consecutive roles.
       const geminiMessages = [];
       let currentRole = null;
       let currentParts = [];
@@ -72,7 +71,7 @@ export default async function handler(req) {
         if (textContent.trim()) parts.push({ text: textContent.trim() });
         if (parts.length === 0) parts.push({ text: "(Attached File)" });
 
-        // Merge logic
+        // Merge logic to prevent consecutive role crashes
         if (role === currentRole) {
           currentParts.push(...parts);
         } else {
@@ -88,7 +87,8 @@ export default async function handler(req) {
         geminiMessages.push({ role: currentRole, parts: currentParts });
       }
 
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      // THE FIX: Changed 'gemini-1.5-pro' to the active 'gemini-2.5-pro' model
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
