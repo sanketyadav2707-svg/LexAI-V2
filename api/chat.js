@@ -44,7 +44,7 @@ export default async function handler(req) {
       }
     }
 
-    // ATTEMPT 2: GEMINI FLASH (Free Tier Approved)
+    // ATTEMPT 2: GEMINI FLASH (Active Free Tier)
     if (process.env.GEMINI_API_KEY) {
       
       const geminiMessages = [];
@@ -83,8 +83,8 @@ export default async function handler(req) {
         geminiMessages.push({ role: currentRole, parts: currentParts });
       }
 
-      // THE FIX: Changed to gemini-1.5-flash which has an active free tier
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      // THE FIX: Changed to the active gemini-2.5-flash model
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
