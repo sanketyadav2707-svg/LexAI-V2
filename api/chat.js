@@ -1,5 +1,5 @@
 export const config = {
-  runtime: 'edge', // Bypasses Vercel's 10-second timeout limit
+  runtime: 'edge', 
 };
 
 export default async function handler(req) {
@@ -14,14 +14,12 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: 'CRITICAL_ERROR: Missing API Keys in Vercel Environment Variables.' }), { status: 500 });
     }
 
-    // 1. Analyze the Payload Size & Content
     const hasImage = messages.some(msg => msg.content && msg.content.includes('[IMAGE_DATA:'));
     const totalChars = messages.reduce((acc, msg) => acc + (msg.content?.length || 0), 0);
     
-    // If it's a massive PDF or an image, Groq will crash. Route directly to Gemini.
     const requiresGemini = hasImage || totalChars > 25000;
 
-    // 2. ATTEMPT 1: GROQ (Only for fast, text-only queries under 25k chars)
+    // ATTEMPT 1: GROQ 
     if (!requiresGemini && process.env.GROQ_API_KEY) {
       try {
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -46,7 +44,7 @@ export default async function handler(req) {
       }
     }
 
-    // 3. ATTEMPT 2: GEMINI (For massive PDFs, Images, or if Groq failed)
+    // ATTEMPT 2: GEMINI FLASH (Free Tier Approved)
     if (process.env.GEMINI_API_KEY) {
       
       const geminiMessages = [];
@@ -58,7 +56,6 @@ export default async function handler(req) {
         const parts = [];
         let textContent = msg.content || "";
 
-        // Extract Base64 Images safely
         if (textContent.includes('[IMAGE_DATA:')) {
           const regex = /\[IMAGE_DATA:(.*?)\](.*?)(\n|$)/g;
           let match;
@@ -71,7 +68,6 @@ export default async function handler(req) {
         if (textContent.trim()) parts.push({ text: textContent.trim() });
         if (parts.length === 0) parts.push({ text: "(Attached File)" });
 
-        // Merge logic to prevent consecutive role crashes
         if (role === currentRole) {
           currentParts.push(...parts);
         } else {
@@ -87,8 +83,8 @@ export default async function handler(req) {
         geminiMessages.push({ role: currentRole, parts: currentParts });
       }
 
-      // THE FIX: Changed 'gemini-1.5-pro' to the active 'gemini-2.5-pro' model
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      // THE FIX: Changed to gemini-1.5-flash which has an active free tier
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
