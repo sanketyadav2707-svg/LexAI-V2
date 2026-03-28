@@ -5,7 +5,7 @@
 ═══════════════════════════════════════════ */
 const CONFIG = {
   API_ENDPOINT: '/api/chat',   
-  MAX_DOC_CHARS: 80000,        
+  MAX_DOC_CHARS: 500000, // Safe limit for mobile RAM (approx 150-200 pages per file)
   STREAM_SPEED: 15,            
 };
 
@@ -17,7 +17,8 @@ CRITICAL PRINCIPLES:
 3. Structure your answers beautifully using markdown.
 4. If a problem is highly complex, break it down step-by-step with effortless clarity.
 5. Build rapport. You are a trusted, premium advisor.
-6. ANTI-HALLUCINATION PROTOCOL: If the user provides a vague or incomplete prompt, do NOT generate repetitive characters. Politely ask them to clarify.
+6. MULTI-FILE ANALYSIS: You are capable of reading multiple documents at once. Cross-reference them intelligently and synthesize the data exactly as the user commands.
+7. ANTI-HALLUCINATION PROTOCOL: If the user provides a vague or incomplete prompt, do NOT generate repetitive characters. Politely ask them to clarify.
 
 DYNAMIC LIABILITY PROTOCOL (CRITICAL):
 You must analyze every single user query to determine if it involves legal advice, compliance, sensitive corporate data, or high-stakes financial investments.
@@ -31,7 +32,7 @@ const State = {
   currentUser: null,
   sessions: [],
   currentSessionId: null,
-  uploadedDocument: null,
+  uploadedDocuments: [], // Supports up to 6 files
   isProcessing: false,
 };
 
@@ -96,7 +97,8 @@ const SessionManager = {
 
     createNew: function() {
         State.currentSessionId = null;
-        State.uploadedDocument = null;
+        State.uploadedDocuments = [];
+        renderFileChips();
         
         document.getElementById('chat-messages').innerHTML = '';
         document.getElementById('chat-messages').classList.add('hidden');
@@ -160,7 +162,7 @@ const SessionManager = {
                 : 'border-transparent text-[var(--text-main)] hover:bg-[var(--hover-bg)]';
             const pinIcon = session.isPinned ? '📌 ' : '';
 
-            // Cleaned up history item HTML (No nested context menu!)
+            // Clean, simplified HTML. 3 dots trigger the global menu function
             const itemHtml = `
             <div class="relative group flex items-center mb-1 w-full">
                 <button onclick="SessionManager.loadSession('${session.id}')" 
@@ -274,20 +276,21 @@ function renderAppStates() {
 }
 
 /* ═══════════════════════════════════════════
-   2. UI INTERACTION HELPERS & GLOBAL MENU
+   2. PERFECT GLOBAL CONTEXT MENU LOGIC
 ═══════════════════════════════════════════ */
 let currentContextMenuId = null;
 
 function toggleContextMenu(event, id) {
-    event.stopPropagation();
+    event.stopPropagation(); // Stop the click from registering on the document body
     const menu = document.getElementById('global-context-menu');
 
-    // Perfect Toggle Logic: If clicking the same button, close it
+    // Toggle behavior: If clicking the same open button, close it and stop
     if (currentContextMenuId === id && !menu.classList.contains('hidden')) {
         closeAllMenus();
         return;
     }
 
+    // Otherwise, close any open menu and configure the new one
     closeAllMenus();
     currentContextMenuId = id;
     
@@ -297,6 +300,7 @@ function toggleContextMenu(event, id) {
     const pinText = session.isPinned ? 'Unpin' : 'Pin';
     const buttonRect = event.currentTarget.getBoundingClientRect();
 
+    // Populate the global menu
     menu.innerHTML = `
         <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.share('${id}')">Share</div>
         <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.rename('${id}')">Rename</div>
@@ -306,15 +310,16 @@ function toggleContextMenu(event, id) {
 
     menu.classList.remove('hidden');
 
-    // Dynamic Positioning Logic (Prevents clipping offscreen)
+    // Calculate Coordinates based on the screen, not the sidebar
     const menuRect = menu.getBoundingClientRect();
     let topPos = buttonRect.bottom + 5;
     let leftPos = buttonRect.right - menuRect.width; 
 
-    // Open upwards if near the bottom of the screen
+    // Prevent clipping at the bottom of the screen
     if (topPos + menuRect.height > window.innerHeight) {
         topPos = buttonRect.top - menuRect.height - 5; 
     }
+    // Prevent clipping on the left edge of mobile
     if (leftPos < 0) leftPos = 10; 
 
     menu.style.top = `${topPos}px`;
@@ -326,7 +331,9 @@ function closeAllMenus() {
     if (menu) menu.classList.add('hidden');
     currentContextMenuId = null;
 }
+// Any click anywhere on the website closes the menu
 document.addEventListener('click', closeAllMenus); 
+
 
 function toggleSettings() {
     const modal = document.getElementById('settings-modal');
@@ -376,13 +383,71 @@ function clearAllData() {
 })();
 
 /* ═══════════════════════════════════════════
-   3. API COMMUNICATION (Frontend -> Backend)
+   3. MULTI-FILE PROCESSING & UI LOGIC
+═══════════════════════════════════════════ */
+const DocProcessor={process:async function(e){const t=e.name,n=e.type||"",r=(e.size/1048576).toFixed(2);let s="";try{if("application/pdf"===n||t.endsWith(".pdf"))s=await this.extractPDF(e);else s=await this.readText(e);return s.length>CONFIG.MAX_DOC_CHARS&&(s=s.substring(0,CONFIG.MAX_DOC_CHARS)+"\n[Document truncated to preserve memory]"),{success:!0,name:t,sizeMB:r,content:s}}catch(e){return{success:!1,error:e.message}}},extractPDF:async function(e){if("undefined"!=typeof pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";const t=await e.arrayBuffer(),n=await pdfjsLib.getDocument({data:t}).promise;let r=`[PDF: ${e.name}]\n`;for(let e=1;e<=n.numPages;e++){const t=await n.getPage(e),s=await t.getTextContent();if(r+=s.items.map((e=>e.str)).join(" ")+"\n",r.length>CONFIG.MAX_DOC_CHARS)break}return r}return await this.readText(e)},readText:function(e){return new Promise(((t,n)=>{const r=new FileReader;r.onload=e=>t(e.target.result),r.onerror=()=>n(new Error("Could not read file")),r.readAsText(e)}))}};
+
+function triggerFileUpload() { document.getElementById('hidden-file-input')?.click(); }
+
+async function handleFileSelect(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    if (State.uploadedDocuments.length + files.length > 6) {
+        alert("Maximum 6 files can be attached at once.");
+        return;
+    }
+
+    const typingId = appendTypingIndicator();
+
+    for (const file of files) {
+        const result = await DocProcessor.process(file);
+        if (result.success) {
+            State.uploadedDocuments.push(result);
+        } else {
+            alert(`Failed to read ${file.name}`);
+        }
+    }
+
+    document.getElementById(typingId)?.remove();
+    renderFileChips();
+    e.target.value = ''; 
+}
+
+function removeFile(index) {
+    State.uploadedDocuments.splice(index, 1);
+    renderFileChips();
+}
+
+function renderFileChips() {
+    const container = document.getElementById('file-staging-area');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    State.uploadedDocuments.forEach((doc, i) => {
+        container.innerHTML += `
+        <div class="bg-blue-900/20 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 animate-fade-up">
+            <span class="truncate max-w-[120px] md:max-w-[200px] font-medium">${doc.name}</span>
+            <button onclick="removeFile(${i})" class="hover:text-red-400 font-bold ml-1 transition-colors">✕</button>
+        </div>`;
+    });
+}
+
+
+/* ═══════════════════════════════════════════
+   4. API COMMUNICATION (Frontend -> Backend)
 ═══════════════════════════════════════════ */
 const LexAI = {
   buildMessages: function(userQuery) {
     const messages = [];
-    if (State.uploadedDocument) {
-      messages.push({ role: 'user', content: `I uploaded a document: ${State.uploadedDocument.name}\n\nCONTENT:\n${State.uploadedDocument.content}` });
+    
+    // Inject all attached files seamlessly
+    if (State.uploadedDocuments.length > 0) {
+        let docContext = "I have attached the following documents for analysis:\n\n";
+        State.uploadedDocuments.forEach((doc, i) => {
+            docContext += `--- DOCUMENT ${i+1}: ${doc.name} ---\n${doc.content}\n\n`;
+        });
+        messages.push({ role: 'user', content: docContext });
     }
 
     const session = SessionManager.getCurrentSession();
@@ -427,11 +492,6 @@ const LexAI = {
 };
 
 /* ═══════════════════════════════════════════
-   4. DOCUMENT PROCESSOR
-═══════════════════════════════════════════ */
-const DocProcessor={process:async function(e){const t=e.name,n=e.type||"",r=(e.size/1048576).toFixed(2);let s="";try{if("application/pdf"===n||t.endsWith(".pdf"))s=await this.extractPDF(e);else s=await this.readText(e);return s.length>CONFIG.MAX_DOC_CHARS&&(s=s.substring(0,CONFIG.MAX_DOC_CHARS)+"\n[Document truncated]"),State.uploadedDocument={name:t,type:n,size:`${r}MB`,content:s},{success:!0,name:t,sizeMB:r,chars:s.length}}catch(e){return{success:!1,error:e.message}}},extractPDF:async function(e){if("undefined"!=typeof pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";const t=await e.arrayBuffer(),n=await pdfjsLib.getDocument({data:t}).promise;let r=`[PDF: ${e.name}]\n`;for(let e=1;e<=n.numPages;e++){const t=await n.getPage(e),s=await t.getTextContent();if(r+=s.items.map((e=>e.str)).join(" ")+"\n",r.length>CONFIG.MAX_DOC_CHARS)break}return r}return await this.readText(e)},readText:function(e){return new Promise(((t,n)=>{const r=new FileReader;r.onload=e=>t(e.target.result),r.onerror=()=>n(new Error("Could not read file")),r.readAsText(e)}))}};
-
-/* ═══════════════════════════════════════════
    5. UI RENDERING & STREAMING
 ═══════════════════════════════════════════ */
 const LexSVG = `<svg class="w-6 h-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
@@ -442,14 +502,17 @@ async function processMessage() {
   const input = document.getElementById('user-query');
   if(!input) return;
   const query = input.value.trim();
-  if (!query) return;
+  
+  // Allow sending just files with no text
+  if (!query && State.uploadedDocuments.length === 0) return; 
 
   State.isProcessing = true;
   document.getElementById('welcome-screen')?.classList.add('hidden');
   document.getElementById('chat-messages').classList.remove('hidden');
 
-  appendBubble('user', query);
-  SessionManager.addMessage('user', query);
+  const displayQuery = query || `[Uploaded ${State.uploadedDocuments.length} file(s) for analysis]`;
+  appendBubble('user', displayQuery);
+  SessionManager.addMessage('user', displayQuery);
   
   input.value = '';
   input.style.height = 'auto';
@@ -465,6 +528,9 @@ async function processMessage() {
     appendBubble('ai', `⚠️ Error: ${err.message}.`);
   }
 
+  // Clear out the 6-file staging area after send
+  State.uploadedDocuments = [];
+  renderFileChips();
   State.isProcessing = false;
 }
 
@@ -474,26 +540,17 @@ function streamText(fullText) {
     const div = document.createElement('div');
     div.className = 'flex justify-start w-full anim-fade-up';
     
-    div.innerHTML = `
-      <div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full">
-         <div class="mt-4 flex-shrink-0">${LexSVG}</div>
-         <div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm">
-            <div id="streaming-p" class="typing-cursor w-full"></div>
-         </div>
-      </div>`;
+    div.innerHTML = `<div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="mt-4 flex-shrink-0">${LexSVG}</div><div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm"><div id="streaming-p" class="typing-cursor w-full"></div></div></div>`;
     box.appendChild(div);
 
     const el = document.getElementById('streaming-p');
     const textToStream = String(fullText);
-    
-    let i = 0;
-    const chunkSize = 3; 
+    let i = 0; const chunkSize = 3; 
 
     const tick = setInterval(() => {
       if (i < textToStream.length) {
         i += chunkSize;
-        let current = textToStream.substring(0, i);
-        el.innerHTML = formatHTML(current) + '<span class="typing-cursor">|</span>';
+        el.innerHTML = formatHTML(textToStream.substring(0, i)) + '<span class="typing-cursor">|</span>';
       } else {
         clearInterval(tick);
         el.innerHTML = formatHTML(textToStream);
@@ -531,11 +588,7 @@ function appendBubble(role, text, skipAnimation = false) {
     div.innerHTML = `<div class="max-w-[90%] md:max-w-[85%] user-bubble p-3 md:p-4 text-sm break-words shadow-sm"><p>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>`;
   } else {
     div.className = `flex justify-start w-full ${animClass}`;
-    div.innerHTML = `
-      <div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full">
-         <div class="mt-4 flex-shrink-0">${LexSVG}</div>
-         <div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm"><div>${formatHTML(String(text))}</div></div>
-      </div>`;
+    div.innerHTML = `<div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="mt-4 flex-shrink-0">${LexSVG}</div><div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm"><div>${formatHTML(String(text))}</div></div></div>`;
   }
   
   box.appendChild(div);
@@ -548,11 +601,7 @@ function appendTypingIndicator() {
   const div = document.createElement('div');
   div.id = id;
   div.className = 'flex justify-start w-full anim-fade-up';
-  div.innerHTML = `
-      <div class="flex items-center gap-4 max-w-[95%] md:max-w-[85%] w-full">
-         <div class="ai-thinking-logo flex-shrink-0">${LexSVG}</div>
-      </div>`;
-      
+  div.innerHTML = `<div class="flex items-center gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="ai-thinking-logo flex-shrink-0">${LexSVG}</div></div>`;
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
   return id;
@@ -561,20 +610,6 @@ function appendTypingIndicator() {
 /* ═══════════════════════════════════════════
    6. UTILITIES & INIT
 ═══════════════════════════════════════════ */
-function triggerFileUpload() { document.getElementById('hidden-file-input')?.click(); }
-function startNewChat() { SessionManager.createNew(); closeAllMenus(); }
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar.classList.contains('-translate-x-full')) {
-        sidebar.classList.remove('-translate-x-full', 'hidden');
-    } else {
-        sidebar.classList.add('-translate-x-full');
-        setTimeout(() => sidebar.classList.add('hidden'), 300);
-    }
-    closeAllMenus();
-}
-
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
@@ -585,6 +620,17 @@ function handleInputKeydown(e) {
     e.preventDefault();
     processMessage();
   }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full', 'hidden');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        setTimeout(() => sidebar.classList.add('hidden'), 300);
+    }
+    closeAllMenus();
 }
 
 window.onload = () => {
