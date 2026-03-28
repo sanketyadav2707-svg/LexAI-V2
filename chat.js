@@ -5,7 +5,7 @@
 ═══════════════════════════════════════════ */
 const CONFIG = {
   API_ENDPOINT: '/api/chat',   
-  MAX_DOC_CHARS: 150000, // Safe limit to prevent Vercel 4.5MB Payload Crash
+  MAX_DOC_CHARS: 500000, 
   STREAM_SPEED: 15,            
 };
 
@@ -31,7 +31,7 @@ const State = {
   currentUser: null,
   sessions: [],
   currentSessionId: null,
-  uploadedDocuments: [], // Array for up to 6 files/photos
+  uploadedDocuments: [], 
   isProcessing: false,
 };
 
@@ -113,7 +113,6 @@ const SessionManager = {
     share: function(id) {
         const s = State.sessions.find(x => x.id === id);
         if(s) {
-            // Clean out massive base64 image strings before sharing
             const text = s.messages.map(m => `${m.role.toUpperCase()}:\n${m.content.replace(/\[IMAGE_DATA.*?\n/g, '[Attached Photo]\n')}`).join('\n\n---\n\n');
             navigator.clipboard.writeText(text).then(() => alert('Chat copied to clipboard!'));
         }
@@ -133,7 +132,7 @@ const SessionManager = {
                 ? 'bg-blue-900/20 text-blue-500 border-blue-500/30' 
                 : 'border-transparent text-[var(--text-main)] hover:bg-[var(--hover-bg)]';
             const pinIcon = session.isPinned ? '📌 ' : '';
-            const cleanTitle = session.title.replace(/\[IMAGE_DATA.*?\n/g, '');
+            const cleanTitle = session.title.replace(/\[IMAGE_DATA.*?\n/g, '').replace(/\[ATTACHED FILES CONTEXT\]/g, 'Files:');
 
             const itemHtml = `
             <div class="relative group flex items-center mb-1 w-full">
@@ -293,7 +292,7 @@ function clearAllData() {
 })();
 
 /* ═══════════════════════════════════════════
-   3. MULTI-FILE & IMAGE PROCESSOR
+   3. MULTI-FILE & IMAGE COMPRESSION PROCESSOR
 ═══════════════════════════════════════════ */
 const DocProcessor = {
     process: async function(file) {
@@ -303,12 +302,12 @@ const DocProcessor = {
         let content = '';
 
         try {
-            // Encode Photos as Base64 for Gemini
+            // Encode Photos as Base64 AND compress them to prevent Vercel crashes
             if (type.startsWith('image/')) {
-                const base64 = await this.readAsBase64(file);
-                content = `[IMAGE_DATA:${type}]${base64}\n`;
+                const base64 = await this.compressImage(file);
+                content = `[IMAGE_DATA:image/jpeg]${base64}\n`;
             } 
-            // Extract PDFs
+            // Extract PDFs safely
             else if (type === 'application/pdf' || name.endsWith('.pdf')) {
                 content = await this.extractPDF(file);
             } 
@@ -317,7 +316,6 @@ const DocProcessor = {
                 content = await this.readText(file);
             }
 
-            // Safe truncation to prevent 4.5MB Payload Crash
             if (content.length > CONFIG.MAX_DOC_CHARS && !type.startsWith('image/')) {
                 content = content.substring(0, CONFIG.MAX_DOC_CHARS) + "\n\n[DOCUMENT TRUNCATED: Server memory limit reached.]";
             }
@@ -337,18 +335,34 @@ const DocProcessor = {
                 const page = await pdf.getPage(i);
                 const ct = await page.getTextContent();
                 text += ct.items.map(x => x.str).join(' ') + '\n';
-                if (text.length > CONFIG.MAX_DOC_CHARS) break; // Optimization: Stop parsing if limit reached
+                if (text.length > CONFIG.MAX_DOC_CHARS) break; 
             }
             return text;
         }
         return await this.readText(file);
     },
-    readAsBase64: function(file) {
+    compressImage: function(file) {
         return new Promise((resolve, reject) => {
-            const r = new FileReader();
-            r.onload = e => resolve(e.target.result.split(',')[1]);
-            r.onerror = () => reject(new Error('Could not read image'));
-            r.readAsDataURL(file);
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1000; // Drastically reduces image payload size
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    // Output as JPEG at 70% quality
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    resolve(dataUrl.split(',')[1]);
+                };
+                img.onerror = () => reject(new Error('Failed to load image for compression'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('Could not read image file'));
+            reader.readAsDataURL(file);
         });
     },
     readText: function(file) {
@@ -375,10 +389,6 @@ async function handleFileSelect(e) {
     const typingId = appendTypingIndicator();
 
     for (const file of files) {
-        // Warning if file is dangerously large for free servers
-        if (file.size > 5 * 1048576) {
-             alert(`Warning: ${file.name} is very large. Processing may take longer than 60 seconds.`);
-        }
         const result = await DocProcessor.process(file);
         if (result.success) {
             State.uploadedDocuments.push(result);
@@ -417,15 +427,6 @@ function renderFileChips() {
 const LexAI = {
   buildMessages: function(userQuery) {
     const messages = [];
-    
-    // Inject all attached files seamlessly
-    if (State.uploadedDocuments.length > 0) {
-        let docContext = "I have attached the following documents/images for analysis:\n\n";
-        State.uploadedDocuments.forEach((doc, i) => {
-            docContext += `--- ATTACHMENT ${i+1}: ${doc.name} ---\n${doc.content}\n\n`;
-        });
-        messages.push({ role: 'user', content: docContext });
-    }
 
     const session = SessionManager.getCurrentSession();
     if (session) {
@@ -433,13 +434,23 @@ const LexAI = {
         messages.push(...history);
     }
 
+    // THE BUG FIX: Bundle files and query into ONE SINGLE user message
+    let finalQuery = userQuery || "Please analyze the attached files.";
     const isDeep = document.getElementById('think-toggle')?.checked || false;
-    let finalQuery = userQuery;
-    if (isDeep) finalQuery = `[DEEP ANALYSIS MODE]\n${userQuery}\nProvide your most thorough, multi-dimensional analysis.`;
+    if (isDeep) finalQuery = `[DEEP ANALYSIS MODE]\n${finalQuery}\nProvide your most thorough, multi-dimensional analysis.`;
 
-    if (finalQuery.trim()) {
-        messages.push({ role: 'user', content: finalQuery });
+    let combinedContent = "";
+    if (State.uploadedDocuments.length > 0) {
+        combinedContent += "[ATTACHED FILES CONTEXT]\n";
+        State.uploadedDocuments.forEach((doc, i) => {
+            combinedContent += `--- FILE ${i+1}: ${doc.name} ---\n${doc.content}\n\n`;
+        });
+        combinedContent += "User Query: " + finalQuery;
+    } else {
+        combinedContent = finalQuery;
     }
+
+    messages.push({ role: 'user', content: combinedContent });
     return messages;
   },
 
@@ -558,8 +569,7 @@ function appendBubble(role, text, skipAnimation = false) {
   const box = document.getElementById('chat-messages');
   if(!box) return;
   
-  // Hide massive image strings from the UI Chat Bubble
-  const cleanText = text.replace(/\[IMAGE_DATA.*?\n/g, '[Attached Photo]\n');
+  const cleanText = text.replace(/\[IMAGE_DATA.*?\n/g, '[Attached Photo]\n').replace(/\[ATTACHED FILES CONTEXT\]([\s\S]*?)User Query:/g, '[Attached Files]\nUser Query:');
 
   const div = document.createElement('div');
   const animClass = skipAnimation ? '' : 'anim-fade-up';
