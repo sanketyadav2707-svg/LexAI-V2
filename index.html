@@ -78,6 +78,7 @@
         #auth-screen { background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 100; position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; transition: opacity 0.4s ease; }
         .auth-card { background: var(--bg-surface); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; }
         
+        /* The Invisible Shield Fix */
         #auth-screen.hidden, #settings-modal.hidden { display: none !important; pointer-events: none; }
 
         input, textarea { background: transparent !important; color: var(--text-main) !important; outline: none; }
@@ -191,6 +192,9 @@
 
     <div class="p-3 md:p-6 w-full shrink-0 relative z-10">
         <div class="max-w-3xl mx-auto input-area rounded-2xl md:rounded-3xl p-3 md:p-4 shadow-2xl border border-[var(--border-color)] transition-all focus-within:border-blue-500/50 focus-within:shadow-blue-500/10">
+            
+            <div id="file-staging-area" class="flex flex-wrap gap-2 mb-2 empty:hidden"></div>
+
             <textarea id="user-query" rows="1" oninput="autoResize(this)" onkeydown="handleInputKeydown(event)" placeholder="Ask Lex anything..." class="w-full bg-transparent border-none outline-none text-sm md:text-base py-2 px-2 md:px-3 resize-none max-h-32 overflow-y-auto"></textarea>
             
             <div class="flex items-center justify-between mt-2 md:mt-4 border-t border-[var(--border-color)] pt-2 md:pt-4">
@@ -198,7 +202,7 @@
                     <button type="button" onclick="triggerFileUpload()" class="text-[var(--text-muted)] hover:text-blue-500 p-2 md:p-0 transition-colors btn-press">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                     </button>
-                    <input type="file" id="hidden-file-input" class="hidden" onchange="handleFileSelect(event)">
+                    <input type="file" id="hidden-file-input" class="hidden" multiple onchange="handleFileSelect(event)">
                     
                     <div class="flex items-center gap-1.5 md:gap-2 bg-[var(--bg-main)] rounded-full px-2.5 py-1.5 md:px-3 border border-[var(--border-color)]">
                         <span class="text-[9px] md:text-[10px] font-bold text-[var(--text-muted)]">DEEP THINKING</span>
@@ -213,7 +217,7 @@
     </div>
 </main>
 
-<div id="global-context-menu" class="hidden fixed w-40 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-2xl z-[100] overflow-hidden text-sm transition-opacity">
+<div id="global-context-menu" class="hidden fixed w-40 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-2xl z-[100] overflow-hidden text-sm">
     </div>
 
 <script src="chat.js"></script>
