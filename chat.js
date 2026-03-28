@@ -5,7 +5,7 @@
 ═══════════════════════════════════════════ */
 const CONFIG = {
   API_ENDPOINT: '/api/chat',   
-  MAX_DOC_CHARS: 500000, // Safe limit for mobile RAM (approx 150-200 pages per file)
+  MAX_DOC_CHARS: 150000, // Safe limit to prevent Vercel 4.5MB Payload Crash
   STREAM_SPEED: 15,            
 };
 
@@ -17,8 +17,7 @@ CRITICAL PRINCIPLES:
 3. Structure your answers beautifully using markdown.
 4. If a problem is highly complex, break it down step-by-step with effortless clarity.
 5. Build rapport. You are a trusted, premium advisor.
-6. MULTI-FILE ANALYSIS: You are capable of reading multiple documents at once. Cross-reference them intelligently and synthesize the data exactly as the user commands.
-7. ANTI-HALLUCINATION PROTOCOL: If the user provides a vague or incomplete prompt, do NOT generate repetitive characters. Politely ask them to clarify.
+6. MULTI-FILE & VISION ANALYSIS: You are capable of reading multiple documents and analyzing images/photos at once. Cross-reference them intelligently and synthesize the data exactly as the user commands.
 
 DYNAMIC LIABILITY PROTOCOL (CRITICAL):
 You must analyze every single user query to determine if it involves legal advice, compliance, sensitive corporate data, or high-stakes financial investments.
@@ -32,37 +31,30 @@ const State = {
   currentUser: null,
   sessions: [],
   currentSessionId: null,
-  uploadedDocuments: [], // Supports up to 6 files
+  uploadedDocuments: [], // Array for up to 6 files/photos
   isProcessing: false,
 };
 
-function generateId() {
-    return Math.random().toString(36).substring(2, 15);
-}
+function generateId() { return Math.random().toString(36).substring(2, 15); }
 
 const SessionManager = {
     init: function() {
         const saved = localStorage.getItem('lex_sessions');
-        if (saved) {
-            State.sessions = JSON.parse(saved);
-        }
+        if (saved) State.sessions = JSON.parse(saved);
         this.renderHistory();
     },
-    
     saveAll: function() {
         localStorage.setItem('lex_sessions', JSON.stringify(State.sessions));
         this.renderHistory();
     },
-
     getCurrentSession: function() {
         return State.sessions.find(s => s.id === State.currentSessionId);
     },
-
     addMessage: function(role, content) {
         if (!State.currentSessionId) {
             const newSession = {
                 id: generateId(),
-                title: content.substring(0, 30) + (content.length > 30 ? '...' : ''),
+                title: content.substring(0, 30).replace(/\[IMAGE_DATA.*?\n/g, '') + '...',
                 messages: [],
                 date: new Date().toISOString(),
                 isPinned: false
@@ -70,62 +62,46 @@ const SessionManager = {
             State.sessions.unshift(newSession); 
             State.currentSessionId = newSession.id;
         }
-
         const session = this.getCurrentSession();
         if (session) {
             session.messages.push({ role, content });
             this.saveAll();
         }
     },
-
     loadSession: function(id) {
         State.currentSessionId = id;
         const session = this.getCurrentSession();
-        
         document.getElementById('welcome-screen')?.classList.add('hidden');
         const chatBox = document.getElementById('chat-messages');
         chatBox.classList.remove('hidden');
         chatBox.innerHTML = ''; 
-
-        session.messages.forEach(msg => {
-            appendBubble(msg.role, msg.content, true); 
-        });
-
+        session.messages.forEach(msg => appendBubble(msg.role, msg.content, true));
         if(window.innerWidth < 768) toggleSidebar(); 
         this.renderHistory();
     },
-
     createNew: function() {
         State.currentSessionId = null;
         State.uploadedDocuments = [];
         renderFileChips();
-        
         document.getElementById('chat-messages').innerHTML = '';
         document.getElementById('chat-messages').classList.add('hidden');
         document.getElementById('welcome-screen')?.classList.remove('hidden');
-        
         if(window.innerWidth < 768) toggleSidebar();
         this.renderHistory();
     },
-
     togglePin: function(id) {
         const s = State.sessions.find(x => x.id === id);
         if(s) { s.isPinned = !s.isPinned; this.saveAll(); }
         closeAllMenus();
     },
-    
     rename: function(id) {
         const s = State.sessions.find(x => x.id === id);
         if(s) {
             const newName = prompt("Rename chat:", s.title);
-            if(newName && newName.trim()) {
-                s.title = newName.trim();
-                this.saveAll();
-            }
+            if(newName && newName.trim()) { s.title = newName.trim(); this.saveAll(); }
         }
         closeAllMenus();
     },
-    
     deleteChat: function(id) {
         if(confirm("Delete this conversation?")) {
             State.sessions = State.sessions.filter(x => x.id !== id);
@@ -134,50 +110,40 @@ const SessionManager = {
         }
         closeAllMenus();
     },
-    
     share: function(id) {
         const s = State.sessions.find(x => x.id === id);
         if(s) {
-            const text = s.messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join('\n\n---\n\n');
+            // Clean out massive base64 image strings before sharing
+            const text = s.messages.map(m => `${m.role.toUpperCase()}:\n${m.content.replace(/\[IMAGE_DATA.*?\n/g, '[Attached Photo]\n')}`).join('\n\n---\n\n');
             navigator.clipboard.writeText(text).then(() => alert('Chat copied to clipboard!'));
         }
         closeAllMenus();
     },
-
     renderHistory: function() {
         const list = document.getElementById('history-list');
         if (!list) return;
-
         list.innerHTML = `<p class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-bold mb-3 px-2">Recents</p>`;
-
         const sortedSessions = [...State.sessions].sort((a, b) => {
             if (a.isPinned === b.isPinned) return new Date(b.date) - new Date(a.date);
             return a.isPinned ? -1 : 1;
         });
-
         sortedSessions.forEach(session => {
             const isActive = session.id === State.currentSessionId;
             const activeClass = isActive 
                 ? 'bg-blue-900/20 text-blue-500 border-blue-500/30' 
                 : 'border-transparent text-[var(--text-main)] hover:bg-[var(--hover-bg)]';
             const pinIcon = session.isPinned ? '📌 ' : '';
+            const cleanTitle = session.title.replace(/\[IMAGE_DATA.*?\n/g, '');
 
-            // Clean, simplified HTML. 3 dots trigger the global menu function
             const itemHtml = `
             <div class="relative group flex items-center mb-1 w-full">
-                <button onclick="SessionManager.loadSession('${session.id}')" 
-                        class="w-full text-left p-3 pr-12 rounded-xl text-sm font-medium border transition-all truncate btn-press ${activeClass}">
-                    ${pinIcon}${session.title}
+                <button onclick="SessionManager.loadSession('${session.id}')" class="w-full text-left p-3 pr-12 rounded-xl text-sm font-medium border transition-all truncate btn-press ${activeClass}">
+                    ${pinIcon}${cleanTitle}
                 </button>
-                
-                <button onclick="toggleContextMenu(event, '${session.id}')" 
-                        class="absolute right-1 top-1/2 -translate-y-1/2 z-20 p-3 text-[var(--text-muted)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:text-[var(--text-main)] rounded-lg">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="8" cy="4" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="8" cy="12" r="1"/>
-                    </svg>
+                <button onclick="toggleContextMenu(event, '${session.id}')" class="absolute right-1 top-1/2 -translate-y-1/2 z-20 p-3 text-[var(--text-muted)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:text-[var(--text-main)] rounded-lg">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="4" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="8" cy="12" r="1"/></svg>
                 </button>
             </div>`;
-            
             list.insertAdjacentHTML('beforeend', itemHtml);
         });
     }
@@ -192,13 +158,11 @@ function openAuthScreen() {
     void screen.offsetWidth; 
     screen.classList.remove('opacity-0');
 }
-
 function closeAuthScreen() {
     const screen = document.getElementById('auth-screen');
     screen.classList.add('opacity-0');
     setTimeout(() => screen.classList.add('hidden'), 400);
 }
-
 function setAuthMode(mode) {
   const signupFields = document.getElementById('signup-fields');
   const loginTab = document.getElementById('login-tab');
@@ -213,127 +177,76 @@ function setAuthMode(mode) {
     if(signupTab) signupTab.className = "border-b-2 border-transparent py-2 text-sm font-semibold text-[var(--text-muted)] transition-all hover:text-[var(--text-main)]";
   }
 }
-
 function submitAuth() {
   const email = document.getElementById('auth-email')?.value;
   const nameEl = document.getElementById('auth-name');
   const name = (nameEl && nameEl.value) ? nameEl.value : (email ? email.split('@')[0] : 'User');
-  
   if (!email) return alert("Email is required.");
-  
   State.currentUser = { name, email };
   localStorage.setItem('lex_user', JSON.stringify(State.currentUser));
-  
   closeAuthScreen();
   renderAppStates();
 }
-
 function handleSignout() {
   localStorage.removeItem('lex_user');
   State.currentUser = null;
   renderAppStates();
 }
-
 function togglePass() {
   const p = document.getElementById('auth-pass');
   if (p) p.type = p.type === 'password' ? 'text' : 'password';
 }
-
 function renderAppStates() {
     const welcomeContainer = document.getElementById('welcome-text-container');
     const svgIcon = `<svg class="w-16 h-16 mb-6 text-blue-500 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
-    
     if (State.currentUser) {
-        welcomeContainer.innerHTML = `${svgIcon}
-            <h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">Welcome, <span class="text-blue-500">${State.currentUser.name}</span>.</h1>
-            <p class="text-[var(--text-muted)] text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Deep analysis and executive intelligence at your fingertips.</p>`;
+        welcomeContainer.innerHTML = `${svgIcon}<h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">Welcome, <span class="text-blue-500">${State.currentUser.name}</span>.</h1><p class="text-[var(--text-muted)] text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Deep analysis and executive intelligence at your fingertips.</p>`;
     } else {
-        welcomeContainer.innerHTML = `${svgIcon}
-            <h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">How can I help you today?</h1>
-            <p class="text-[var(--text-muted)] text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Start chatting instantly, or log in to sync your sessions.</p>`;
+        welcomeContainer.innerHTML = `${svgIcon}<h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">How can I help you today?</h1><p class="text-[var(--text-muted)] text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Start chatting instantly, or log in to sync your sessions.</p>`;
     }
-
     const sidebarFooter = document.getElementById('sidebar-footer');
     const settingsBtn = `<button onclick="toggleSettings()" class="btn-press w-full text-left text-sm font-medium hover-effect p-2.5 rounded-lg flex items-center gap-3 transition-colors"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</button>`;
-    
     if (State.currentUser) {
-        sidebarFooter.innerHTML = settingsBtn + `
-            <div class="px-2 py-3 mt-2 border-t border-[var(--border-color)] flex justify-between items-center">
-                <div class="flex items-center gap-2 overflow-hidden">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shrink-0">${State.currentUser.name.charAt(0).toUpperCase()}</div>
-                    <span class="text-sm font-semibold truncate">${State.currentUser.name}</span>
-                </div>
-                <button onclick="handleSignout()" class="text-[var(--text-muted)] hover:text-red-500 transition-colors p-2" title="Sign Out">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                </button>
-            </div>`;
+        sidebarFooter.innerHTML = settingsBtn + `<div class="px-2 py-3 mt-2 border-t border-[var(--border-color)] flex justify-between items-center"><div class="flex items-center gap-2 overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shrink-0">${State.currentUser.name.charAt(0).toUpperCase()}</div><span class="text-sm font-semibold truncate">${State.currentUser.name}</span></div><button onclick="handleSignout()" class="text-[var(--text-muted)] hover:text-red-500 transition-colors p-2"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>`;
     } else {
-        sidebarFooter.innerHTML = settingsBtn + `
-            <button onclick="openAuthScreen()" class="btn-press mt-2 w-full py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] hover:bg-[var(--hover-bg)] transition-all text-sm font-semibold flex items-center justify-center gap-2">
-                Sign Up / Log In
-            </button>`;
+        sidebarFooter.innerHTML = settingsBtn + `<button onclick="openAuthScreen()" class="btn-press mt-2 w-full py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] hover:bg-[var(--hover-bg)] transition-all text-sm font-semibold flex items-center justify-center gap-2">Sign Up / Log In</button>`;
     }
 }
 
 /* ═══════════════════════════════════════════
-   2. PERFECT GLOBAL CONTEXT MENU LOGIC
+   2. GLOBAL CONTEXT MENU & UI HELPERS
 ═══════════════════════════════════════════ */
 let currentContextMenuId = null;
 
 function toggleContextMenu(event, id) {
-    event.stopPropagation(); // Stop the click from registering on the document body
+    event.stopPropagation();
     const menu = document.getElementById('global-context-menu');
-
-    // Toggle behavior: If clicking the same open button, close it and stop
-    if (currentContextMenuId === id && !menu.classList.contains('hidden')) {
-        closeAllMenus();
-        return;
-    }
-
-    // Otherwise, close any open menu and configure the new one
+    if (currentContextMenuId === id && !menu.classList.contains('hidden')) { closeAllMenus(); return; }
     closeAllMenus();
     currentContextMenuId = id;
-    
     const session = State.sessions.find(s => s.id === id);
     if (!session) return;
     
     const pinText = session.isPinned ? 'Unpin' : 'Pin';
     const buttonRect = event.currentTarget.getBoundingClientRect();
 
-    // Populate the global menu
-    menu.innerHTML = `
-        <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.share('${id}')">Share</div>
-        <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.rename('${id}')">Rename</div>
-        <div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.togglePin('${id}')">${pinText}</div>
-        <div class="hover:bg-red-500/10 text-red-500 p-3 cursor-pointer transition-colors" onclick="event.stopPropagation(); SessionManager.deleteChat('${id}')">Delete</div>
-    `;
-
+    menu.innerHTML = `<div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.share('${id}')">Share</div><div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.rename('${id}')">Rename</div><div class="hover:bg-[var(--hover-bg)] p-3 cursor-pointer transition-colors border-b border-[var(--border-color)]" onclick="event.stopPropagation(); SessionManager.togglePin('${id}')">${pinText}</div><div class="hover:bg-red-500/10 text-red-500 p-3 cursor-pointer transition-colors" onclick="event.stopPropagation(); SessionManager.deleteChat('${id}')">Delete</div>`;
     menu.classList.remove('hidden');
 
-    // Calculate Coordinates based on the screen, not the sidebar
     const menuRect = menu.getBoundingClientRect();
     let topPos = buttonRect.bottom + 5;
     let leftPos = buttonRect.right - menuRect.width; 
-
-    // Prevent clipping at the bottom of the screen
-    if (topPos + menuRect.height > window.innerHeight) {
-        topPos = buttonRect.top - menuRect.height - 5; 
-    }
-    // Prevent clipping on the left edge of mobile
+    if (topPos + menuRect.height > window.innerHeight) topPos = buttonRect.top - menuRect.height - 5; 
     if (leftPos < 0) leftPos = 10; 
-
     menu.style.top = `${topPos}px`;
     menu.style.left = `${leftPos}px`;
 }
-
 function closeAllMenus() {
     const menu = document.getElementById('global-context-menu');
     if (menu) menu.classList.add('hidden');
     currentContextMenuId = null;
 }
-// Any click anywhere on the website closes the menu
 document.addEventListener('click', closeAllMenus); 
-
 
 function toggleSettings() {
     const modal = document.getElementById('settings-modal');
@@ -349,7 +262,6 @@ function toggleSettings() {
         setTimeout(() => modal.classList.add('hidden'), 300);
     }
 }
-
 function toggleTheme() {
     const html = document.documentElement;
     const btn = document.getElementById('theme-btn');
@@ -363,7 +275,6 @@ function toggleTheme() {
         localStorage.setItem('lex_theme', 'dark');
     }
 }
-
 function clearAllData() {
     if(confirm("Are you sure? This will delete all chat history.")) {
         localStorage.removeItem('lex_sessions');
@@ -372,7 +283,6 @@ function clearAllData() {
         toggleSettings();
     }
 }
-
 (function loadTheme() {
     const savedTheme = localStorage.getItem('lex_theme');
     const html = document.documentElement;
@@ -383,9 +293,73 @@ function clearAllData() {
 })();
 
 /* ═══════════════════════════════════════════
-   3. MULTI-FILE PROCESSING & UI LOGIC
+   3. MULTI-FILE & IMAGE PROCESSOR
 ═══════════════════════════════════════════ */
-const DocProcessor={process:async function(e){const t=e.name,n=e.type||"",r=(e.size/1048576).toFixed(2);let s="";try{if("application/pdf"===n||t.endsWith(".pdf"))s=await this.extractPDF(e);else s=await this.readText(e);return s.length>CONFIG.MAX_DOC_CHARS&&(s=s.substring(0,CONFIG.MAX_DOC_CHARS)+"\n[Document truncated to preserve memory]"),{success:!0,name:t,sizeMB:r,content:s}}catch(e){return{success:!1,error:e.message}}},extractPDF:async function(e){if("undefined"!=typeof pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";const t=await e.arrayBuffer(),n=await pdfjsLib.getDocument({data:t}).promise;let r=`[PDF: ${e.name}]\n`;for(let e=1;e<=n.numPages;e++){const t=await n.getPage(e),s=await t.getTextContent();if(r+=s.items.map((e=>e.str)).join(" ")+"\n",r.length>CONFIG.MAX_DOC_CHARS)break}return r}return await this.readText(e)},readText:function(e){return new Promise(((t,n)=>{const r=new FileReader;r.onload=e=>t(e.target.result),r.onerror=()=>n(new Error("Could not read file")),r.readAsText(e)}))}};
+const DocProcessor = {
+    process: async function(file) {
+        const name = file.name;
+        const type = file.type || '';
+        const sizeMB = (file.size / 1048576).toFixed(2);
+        let content = '';
+
+        try {
+            // Encode Photos as Base64 for Gemini
+            if (type.startsWith('image/')) {
+                const base64 = await this.readAsBase64(file);
+                content = `[IMAGE_DATA:${type}]${base64}\n`;
+            } 
+            // Extract PDFs
+            else if (type === 'application/pdf' || name.endsWith('.pdf')) {
+                content = await this.extractPDF(file);
+            } 
+            // Read Standard Text/Code files
+            else {
+                content = await this.readText(file);
+            }
+
+            // Safe truncation to prevent 4.5MB Payload Crash
+            if (content.length > CONFIG.MAX_DOC_CHARS && !type.startsWith('image/')) {
+                content = content.substring(0, CONFIG.MAX_DOC_CHARS) + "\n\n[DOCUMENT TRUNCATED: Server memory limit reached.]";
+            }
+            return { success: true, name, sizeMB, content };
+            
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+    extractPDF: async function(file) {
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const ab = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+            let text = `[PDF: ${file.name}]\n`;
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const ct = await page.getTextContent();
+                text += ct.items.map(x => x.str).join(' ') + '\n';
+                if (text.length > CONFIG.MAX_DOC_CHARS) break; // Optimization: Stop parsing if limit reached
+            }
+            return text;
+        }
+        return await this.readText(file);
+    },
+    readAsBase64: function(file) {
+        return new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = e => resolve(e.target.result.split(',')[1]);
+            r.onerror = () => reject(new Error('Could not read image'));
+            r.readAsDataURL(file);
+        });
+    },
+    readText: function(file) {
+        return new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = e => resolve(e.target.result);
+            r.onerror = () => reject(new Error('Could not read file'));
+            r.readAsText(file);
+        });
+    }
+};
 
 function triggerFileUpload() { document.getElementById('hidden-file-input')?.click(); }
 
@@ -401,6 +375,10 @@ async function handleFileSelect(e) {
     const typingId = appendTypingIndicator();
 
     for (const file of files) {
+        // Warning if file is dangerously large for free servers
+        if (file.size > 5 * 1048576) {
+             alert(`Warning: ${file.name} is very large. Processing may take longer than 60 seconds.`);
+        }
         const result = await DocProcessor.process(file);
         if (result.success) {
             State.uploadedDocuments.push(result);
@@ -433,7 +411,6 @@ function renderFileChips() {
     });
 }
 
-
 /* ═══════════════════════════════════════════
    4. API COMMUNICATION (Frontend -> Backend)
 ═══════════════════════════════════════════ */
@@ -443,9 +420,9 @@ const LexAI = {
     
     // Inject all attached files seamlessly
     if (State.uploadedDocuments.length > 0) {
-        let docContext = "I have attached the following documents for analysis:\n\n";
+        let docContext = "I have attached the following documents/images for analysis:\n\n";
         State.uploadedDocuments.forEach((doc, i) => {
-            docContext += `--- DOCUMENT ${i+1}: ${doc.name} ---\n${doc.content}\n\n`;
+            docContext += `--- ATTACHMENT ${i+1}: ${doc.name} ---\n${doc.content}\n\n`;
         });
         messages.push({ role: 'user', content: docContext });
     }
@@ -460,7 +437,9 @@ const LexAI = {
     let finalQuery = userQuery;
     if (isDeep) finalQuery = `[DEEP ANALYSIS MODE]\n${userQuery}\nProvide your most thorough, multi-dimensional analysis.`;
 
-    messages.push({ role: 'user', content: finalQuery });
+    if (finalQuery.trim()) {
+        messages.push({ role: 'user', content: finalQuery });
+    }
     return messages;
   },
 
@@ -503,14 +482,13 @@ async function processMessage() {
   if(!input) return;
   const query = input.value.trim();
   
-  // Allow sending just files with no text
   if (!query && State.uploadedDocuments.length === 0) return; 
 
   State.isProcessing = true;
   document.getElementById('welcome-screen')?.classList.add('hidden');
   document.getElementById('chat-messages').classList.remove('hidden');
 
-  const displayQuery = query || `[Uploaded ${State.uploadedDocuments.length} file(s) for analysis]`;
+  const displayQuery = query || `[Uploaded ${State.uploadedDocuments.length} attachment(s) for analysis]`;
   appendBubble('user', displayQuery);
   SessionManager.addMessage('user', displayQuery);
   
@@ -528,7 +506,6 @@ async function processMessage() {
     appendBubble('ai', `⚠️ Error: ${err.message}.`);
   }
 
-  // Clear out the 6-file staging area after send
   State.uploadedDocuments = [];
   renderFileChips();
   State.isProcessing = false;
@@ -580,15 +557,19 @@ function formatHTML(text) {
 function appendBubble(role, text, skipAnimation = false) {
   const box = document.getElementById('chat-messages');
   if(!box) return;
+  
+  // Hide massive image strings from the UI Chat Bubble
+  const cleanText = text.replace(/\[IMAGE_DATA.*?\n/g, '[Attached Photo]\n');
+
   const div = document.createElement('div');
   const animClass = skipAnimation ? '' : 'anim-fade-up';
   
   if (role === 'user') {
     div.className = `flex justify-end w-full ${animClass}`;
-    div.innerHTML = `<div class="max-w-[90%] md:max-w-[85%] user-bubble p-3 md:p-4 text-sm break-words shadow-sm"><p>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>`;
+    div.innerHTML = `<div class="max-w-[90%] md:max-w-[85%] user-bubble p-3 md:p-4 text-sm break-words shadow-sm"><p>${cleanText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>`;
   } else {
     div.className = `flex justify-start w-full ${animClass}`;
-    div.innerHTML = `<div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="mt-4 flex-shrink-0">${LexSVG}</div><div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm"><div>${formatHTML(String(text))}</div></div></div>`;
+    div.innerHTML = `<div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="mt-4 flex-shrink-0">${LexSVG}</div><div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm"><div>${formatHTML(String(cleanText))}</div></div></div>`;
   }
   
   box.appendChild(div);
