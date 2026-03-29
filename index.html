@@ -1,225 +1,163 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LexAI | Executive Intelligence</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        lex: { 500: '#3b82f6', 900: '#1e3a8a' }
-                    }
-                }
-            }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LexAI | Executive Intelligence</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: { 
+            brand: '#3b82f6', 
+            sidebar: '#0a0b0d',
+            appbg: '#111216',
+            inputbg: '#1c1e24',
+            border: '#2a2e38'
+          },
         }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-main: #f8fafc;
-            --bg-surface: #ffffff;
-            --bg-input: #f1f5f9;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --bubble-user: #f1f5f9;
-            --bubble-ai: #ffffff;
-            --hover-bg: #f1f5f9;
-        }
-        .dark {
-            --bg-main: #000000;
-            --bg-surface: #0a0a0a;
-            --bg-input: rgba(15, 15, 15, 0.9);
-            --text-main: #f8fafc;
-            --text-muted: #71717a;
-            --border-color: #27272a;
-            --bubble-user: #141414;
-            --bubble-ai: rgba(255,255,255,0.03);
-            --hover-bg: #18181b;
-        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg-main: #111216;
+      --bg-sidebar: #0a0b0d;
+      --bg-input: #1c1e24;
+      --border-color: #2a2e38;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --hover-bg: rgba(255,255,255,0.03);
+    }
+    html.light {
+      --bg-main: #f8fafc;
+      --bg-sidebar: #f1f5f9;
+      --bg-input: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --hover-bg: rgba(0,0,0,0.03);
+    }
+    body { background-color: var(--bg-main); color: var(--text-main); font-feature-settings: "ss01", "ss03", "cv01"; overscroll-behavior-y: none; }
+    
+    /* Scrollbar fixes */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.1); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.3); }
 
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--bg-main); 
-            color: var(--text-main); 
-            overflow: hidden; 
-            height: 100dvh; 
-            width: 100vw; 
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        .sidebar { background: var(--bg-surface); border-right: 1px solid var(--border-color); }
-        .ai-bubble { background: var(--bubble-ai); border: 1px solid var(--border-color); border-radius: 1.5rem; }
-        .user-bubble { background: var(--bubble-user); border: 1px solid var(--border-color); border-radius: 1.2rem; }
-        .input-area { background: var(--bg-input); backdrop-filter: blur(20px); border: 1px solid var(--border-color); }
-        .modal-bg { background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
-        
-        .btn-press:active { transform: scale(0.96); }
-        .hover-effect:hover { background: var(--hover-bg); }
-        
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .anim-fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .anim-delay-1 { animation-delay: 0.1s; opacity: 0; }
-        .anim-delay-2 { animation-delay: 0.2s; opacity: 0; }
+    /* Bubbles */
+    .user-bubble { background-color: var(--bg-input); color: var(--text-main); border-radius: 18px 18px 0px 18px; border: 1px solid var(--border-color); }
+    .ai-bubble { background-color: transparent; color: var(--text-main); border-radius: 0px 18px 18px 18px; }
+    
+    /* Animations */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .anim-fade-up { animation: fadeUp 0.35s ease-out forwards; }
+    
+    /* Staging Area for Uploads */
+    #file-staging-area {
+        display: none;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 16px;
+        border-top: 1px solid var(--border-color);
+        background-color: var(--bg-input);
+        margin-top: -1px; /* Overlap input top border */
+    }
 
-        @keyframes pulse-spin {
-            0% { transform: scale(1) rotate(0deg); opacity: 0.8; filter: drop-shadow(0 0 5px #3b82f6); }
-            50% { transform: scale(1.1) rotate(180deg); opacity: 1; filter: drop-shadow(0 0 15px #60a5fa); }
-            100% { transform: scale(1) rotate(360deg); opacity: 0.8; filter: drop-shadow(0 0 5px #3b82f6); }
-        }
-        .ai-thinking-logo { animation: pulse-spin 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-        .typing-cursor::after { content: '|'; animation: blink 0.8s infinite; color: #60A5FA; }
-        @keyframes blink { 50% { opacity: 0; } }
+    /* THE UPDATE: Table Styling & Advanced Markdown Pointers */
+    #chat-messages table { width: 100%; margin-top: 1rem; margin-bottom: 1rem; border-collapse: collapse; overflow-x: auto; display: block; }
+    #chat-messages th { background-color: var(--hover-bg); color: var(--text-main); font-weight: 600; text-align: left; padding: 12px; border: 1px solid var(--border-color); }
+    #chat-messages td { padding: 10px; border: 1px solid var(--border-color); text-align: left; color: var(--text-main); }
+    #chat-messages pre { background-color: rgba(0,0,0,0.1); padding: 1rem; border-radius: 8px; font-family: monospace; overflow-x: auto; font-size: 0.85rem; border: 1px solid var(--border-color); }
+    #chat-messages code { color: #f87171; background-color: rgba(0,0,0,0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }
+    #chat-messages pre code { color: inherit; background-color: transparent; padding: 0; }
+    
+    /* Re-enabling standard list styles for Marked.js */
+    #chat-messages ul { list-style-type: disc !important; margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+    #chat-messages ol { list-style-type: decimal !important; margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+    #chat-messages li { margin-bottom: 0.25rem; }
 
-        #auth-screen { background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 100; position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; transition: opacity 0.4s ease; }
-        .auth-card { background: var(--bg-surface); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; }
-        
-        /* The Invisible Shield Fix */
-        #auth-screen.hidden, #settings-modal.hidden { display: none !important; pointer-events: none; }
-
-        input, textarea { background: transparent !important; color: var(--text-main) !important; outline: none; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
-    </style>
+    /* Button interactions */
+    .btn-press:active { transform: scale(0.97); }
+    
+    /* UI Element Overwrites */
+    .chat-container-max { max-width: 800px; margin-left: auto; margin-right: auto; }
+  </style>
 </head>
-<body class="flex h-[100dvh] relative">
+<body class="font-sans antialiased text-sm">
 
-<div id="auth-screen" class="hidden opacity-0">
-    <div class="auth-card anim-fade-up">
-        <button onclick="closeAuthScreen()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors p-2">✕</button>
-        
-        <div class="text-center mb-8 flex flex-col items-center">
-            <svg class="w-12 h-12 mb-3 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                <polyline points="2 17 12 22 22 17"></polyline>
-                <polyline points="2 12 12 17 22 12"></polyline>
-            </svg>
-            <h1 class="text-3xl font-bold tracking-tighter italic transition-all">LexAI</h1>
-            
-            <div class="flex justify-center gap-10 mt-8 border-b border-[var(--border-color)] w-full">
-                <button type="button" onclick="setAuthMode('login')" id="login-tab" class="border-b-2 border-blue-500 py-2 text-sm font-semibold transition-all">Login</button>
-                <button type="button" onclick="setAuthMode('signup')" id="signup-tab" class="border-b-2 border-transparent py-2 text-sm font-semibold text-[var(--text-muted)] transition-all hover:text-[var(--text-main)]">Sign Up</button>
+  <div class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="w-[280px] h-full flex flex-col shrink-0 bg-sidebar border-r border-border -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40 fixed md:relative">
+      <div class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-6 h-6 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          <span class="font-bold text-lg tracking-tight">LexAI</span>
+        </div>
+        <button onclick="toggleSidebar()" class="md:hidden text-muted p-1 hover:text-main"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-3 shrink-0"><button onclick="SessionManager.createNew()" class="btn-press w-full p-2.5 bg-brand text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors text-sm shadow-sm"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> New Session</button></div>
+      <nav id="history-list" class="flex-grow overflow-y-auto px-3 py-2 space-y-1.5 scrollbar-thin"><p class="text-[10px] uppercase tracking-widest text-muted font-bold mb-3 px-2">Recents</p></nav>
+      <div id="sidebar-footer" class="p-3 border-t border-border mt-auto shrink-0"></div>
+    </aside>
+
+    <main class="flex-grow h-full flex flex-col bg-appbg relative">
+      <header class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border bg-appbg shrink-0 z-30">
+        <button onclick="toggleSidebar()" class="md:hidden text-muted p-1.5 hover:text-main rounded-lg"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+        <div class="flex items-center gap-2 md:hidden">
+          <svg class="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          <span class="font-bold">Lex</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 text-xs text-muted border border-border px-3 py-1.5 rounded-full bg-inputbg"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> All Systems Operational</div>
+        </div>
+      </header>
+      
+      <div id="chat-messages" class="flex-grow overflow-y-auto p-4 md:p-8 space-y-8 scrollbar-thin pb-36 hidden relative"></div>
+      
+      <div id="welcome-screen" class="flex-grow flex flex-col items-center justify-center p-6 md:p-10 text-center relative z-10 anim-fade-up">
+        <div id="welcome-text-container" class="anim-fade-up anim-delay-1"></div>
+      </div>
+
+      <div class="absolute bottom-0 left-0 right-0 p-4 md:p-6 z-30">
+        <div class="chat-container-max relative shadow-xl rounded-2xl bg-inputbg border border-border">
+          
+          <div id="file-staging-area"></div>
+          
+          <div class="flex items-center gap-2 p-3 pr-4">
+            <input type="file" id="hidden-file-input" multiple class="hidden" onchange="handleFileSelect(event)">
+            <button onclick="triggerFileUpload()" class="p-3 text-muted hover:text-main rounded-xl transition-colors hover:bg-hover-bg"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></button>
+            <textarea id="user-query" rows="1" oninput="autoResize(this)" onkeydown="handleInputKeydown(event)" placeholder="Ask Lex anything..." class="flex-grow bg-transparent text-main placeholder-muted text-base focus:outline-none resize-none px-1 scrollbar-none max-h-48"></textarea>
+            <div class="flex items-center gap-2">
+                <label class="flex items-center gap-2 text-xs text-muted cursor-pointer hover:text-main p-2 rounded-lg"><input type="checkbox" id="think-toggle" class="accent-brand"> Advanced Mode</label>
+                <button onclick="processMessage()" class="btn-press p-3 bg-brand text-white rounded-xl hover:bg-blue-600 transition-colors shadow flex items-center justify-center shrink-0"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" class="transform rotate-90"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
             </div>
+          </div>
         </div>
+      </div>
+    </main>
+  </div>
 
-        <div class="space-y-4">
-            <div id="signup-fields" class="hidden">
-                <input id="auth-name" type="text" placeholder="Your Name" class="w-full border border-[var(--border-color)] rounded-xl p-3.5 text-sm outline-none focus:border-blue-500 transition-colors bg-[var(--bg-input)]">
-            </div>
-            <input id="auth-email" type="email" placeholder="Email Address" class="w-full border border-[var(--border-color)] rounded-xl p-3.5 text-sm outline-none focus:border-blue-500 transition-colors bg-[var(--bg-input)]">
-            <div class="relative">
-                <input id="auth-pass" type="password" placeholder="Password" class="w-full border border-[var(--border-color)] rounded-xl p-3.5 text-sm outline-none focus:border-blue-500 transition-colors bg-[var(--bg-input)]">
-                <button type="button" onclick="togglePass()" class="absolute right-4 top-3.5 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">👁️</button>
-            </div>
-            <button type="button" onclick="submitAuth()" class="btn-press w-full bg-blue-600 text-white font-bold py-4 rounded-xl mt-4 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30">
-                Continue
-            </button>
-        </div>
+  <div id="global-context-menu" class="hidden fixed w-44 bg-inputbg border border-border rounded-xl shadow-2xl z-50 text-sm overflow-hidden py-1"></div>
+  <div id="settings-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm opacity-0 transition-opacity duration-300" onclick="toggleSettings()">
+    <div id="settings-card" class="w-full max-w-md bg-inputbg border border-border rounded-2xl shadow-2xl p-6 scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6 pb-4 border-b border-border"><h3 class="font-bold text-lg">Lex Settings</h3><button onclick="toggleSettings()" class="text-muted hover:text-main"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="space-y-6">
+        <div class="flex items-center justify-between gap-4 p-4 border border-border rounded-xl bg-hover-bg"><div><p class="font-semibold text-main">Display Mode</p><p class="text-xs text-muted">Switch between dark and light themes</p></div><button id="theme-btn" onclick="toggleTheme()" class="btn-press text-xs px-4 py-2 bg-brand text-white font-semibold rounded-full hover:bg-blue-600 transition">Light Mode</button></div>
+        <div class="flex items-center justify-between gap-4 p-4 border border-border rounded-xl bg-red-500/10 border-red-500/20"><div><p class="font-semibold text-red-500">Delete History</p><p class="text-xs text-muted">Permanently erase all chat history</p></div><button onclick="clearAllData()" class="btn-press text-xs px-4 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition">Delete</button></div>
+      </div>
     </div>
-</div>
+  </div>
 
-<div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden modal-bg opacity-0 transition-opacity duration-300 px-4">
-    <div id="settings-card" class="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl w-full max-w-md p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold">Settings</h2>
-            <button onclick="toggleSettings()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors p-2 rounded-full hover-effect">✕</button>
-        </div>
-        <div class="space-y-4">
-            <div class="flex items-center justify-between p-4 rounded-xl border border-[var(--border-color)]">
-                <div>
-                    <h3 class="font-semibold text-sm">Theme Appearance</h3>
-                    <p class="text-[10px] text-[var(--text-muted)] mt-1">Switch between Dark and Light mode.</p>
-                </div>
-                <button onclick="toggleTheme()" class="bg-[var(--bg-input)] border border-[var(--border-color)] px-4 py-2 rounded-lg text-sm font-semibold btn-press hover-effect transition-all" id="theme-btn">
-                    Light Mode
-                </button>
-            </div>
-            <div class="flex items-center justify-between p-4 rounded-xl border border-red-900/30 bg-red-500/5">
-                <div>
-                    <h3 class="font-semibold text-sm text-red-500">Danger Zone</h3>
-                    <p class="text-[10px] text-[var(--text-muted)] mt-1">Permanently delete all chats and data.</p>
-                </div>
-                <button onclick="clearAllData()" class="bg-red-500/10 text-red-500 border border-red-500/30 px-4 py-2 rounded-lg text-sm font-semibold btn-press hover:bg-red-500 hover:text-white transition-all">
-                    Clear Data
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<button onclick="toggleSidebar()" class="md:hidden absolute top-4 left-4 z-40 p-2.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-xl btn-press">
-    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-</button>
-
-<aside id="sidebar" class="sidebar w-64 flex-col hidden absolute inset-y-0 left-0 z-30 md:relative md:flex shadow-2xl md:shadow-none transition-transform duration-300 -translate-x-full md:translate-x-0">
-    <div class="flex justify-between items-center p-5 border-b border-[var(--border-color)] md:border-none">
-        <div class="flex items-center gap-2">
-            <svg class="w-6 h-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                <polyline points="2 17 12 22 22 17"></polyline>
-                <polyline points="2 12 12 17 22 12"></polyline>
-            </svg>
-            <h2 class="font-bold italic text-lg">LexAI</h2>
-        </div>
-        <button onclick="toggleSidebar()" class="md:hidden text-[var(--text-muted)] p-1">✕</button>
-    </div>
-    
-    <div class="p-4">
-        <button onclick="startNewChat()" class="btn-press w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all text-sm font-semibold flex items-center justify-center gap-2 shadow-md shadow-blue-500/20">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            New Session
-        </button>
-    </div>
-    
-    <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1 relative" id="history-list">
-        </div>
-    
-    <div class="p-4 border-t border-[var(--border-color)] space-y-1" id="sidebar-footer">
-        </div>
-</aside>
-
-<main class="flex-1 flex flex-col relative w-full overflow-hidden">
-    <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center text-center px-6 pt-16 md:pt-0">
-        <div class="anim-fade-up flex flex-col items-center" id="welcome-text-container">
-            </div>
-    </div>
-
-    <div id="chat-messages" class="flex-1 overflow-y-auto px-4 md:px-6 pt-20 pb-4 md:py-10 space-y-6 md:space-y-8 hidden"></div>
-
-    <div class="p-3 md:p-6 w-full shrink-0 relative z-10">
-        <div class="max-w-3xl mx-auto input-area rounded-2xl md:rounded-3xl p-3 md:p-4 shadow-2xl border border-[var(--border-color)] transition-all focus-within:border-blue-500/50 focus-within:shadow-blue-500/10">
-            
-            <div id="file-staging-area" class="flex flex-wrap gap-2 mb-2 empty:hidden"></div>
-
-            <textarea id="user-query" rows="1" oninput="autoResize(this)" onkeydown="handleInputKeydown(event)" placeholder="Ask Lex anything..." class="w-full bg-transparent border-none outline-none text-sm md:text-base py-2 px-2 md:px-3 resize-none max-h-32 overflow-y-auto"></textarea>
-            
-            <div class="flex items-center justify-between mt-2 md:mt-4 border-t border-[var(--border-color)] pt-2 md:pt-4">
-                <div class="flex items-center gap-2 md:gap-4">
-                    <button type="button" onclick="triggerFileUpload()" class="text-[var(--text-muted)] hover:text-blue-500 p-2 md:p-0 transition-colors btn-press">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-                    </button>
-                    <input type="file" id="hidden-file-input" class="hidden" multiple onchange="handleFileSelect(event)">
-                    
-                    <div class="flex items-center gap-1.5 md:gap-2 bg-[var(--bg-main)] rounded-full px-2.5 py-1.5 md:px-3 border border-[var(--border-color)]">
-                        <span class="text-[9px] md:text-[10px] font-bold text-[var(--text-muted)]">DEEP THINKING</span>
-                        <input type="checkbox" id="think-toggle" class="w-3.5 h-3.5 md:w-4 md:h-4 accent-blue-500 cursor-pointer">
-                    </div>
-                </div>
-                <button type="button" onclick="processMessage()" class="btn-press bg-blue-600 text-white h-9 md:h-10 px-4 md:px-6 rounded-full font-bold text-sm md:text-base hover:bg-blue-700 transition-colors shrink-0 shadow-lg shadow-blue-500/20">
-                    Send
-                </button>
-            </div>
-        </div>
-    </div>
-</main>
-
-<div id="global-context-menu" class="hidden fixed w-40 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-2xl z-[100] overflow-hidden text-sm">
-    </div>
-
-<script src="chat.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>
