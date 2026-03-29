@@ -52,9 +52,16 @@ const SessionManager = {
     },
     addMessage: function(role, content) {
         if (!State.currentSessionId) {
+            // THE FIX: Cleanly extract just the user's text for the Sidebar Title
+            let titleText = content;
+            if (titleText.includes('User Query:')) {
+                titleText = titleText.split('User Query:')[1].trim();
+            }
+            titleText = titleText.replace(/\[DEEP ANALYSIS MODE\]\n/g, ''); 
+            
             const newSession = {
                 id: generateId(),
-                title: content.substring(0, 30).replace(/\[IMAGE_DATA.*?\n/g, '').replace(/\[ATTACHED FILES CONTEXT\][\s\S]*?User Query:/g, '') + '...',
+                title: titleText.substring(0, 30) + (titleText.length > 30 ? '...' : ''),
                 messages: [],
                 date: new Date().toISOString(),
                 isPinned: false
@@ -132,12 +139,11 @@ const SessionManager = {
                 ? 'bg-blue-900/20 text-blue-500 border-blue-500/30' 
                 : 'border-transparent text-[var(--text-main)] hover:bg-[var(--hover-bg)]';
             const pinIcon = session.isPinned ? '📌 ' : '';
-            const cleanTitle = session.title.replace(/\[IMAGE_DATA.*?\n/g, '').replace(/\[ATTACHED FILES CONTEXT\][\s\S]*?User Query:/g, 'Files: ');
 
             const itemHtml = `
             <div class="relative group flex items-center mb-1 w-full">
                 <button onclick="SessionManager.loadSession('${session.id}')" class="w-full text-left p-3 pr-12 rounded-xl text-sm font-medium border transition-all truncate btn-press ${activeClass}">
-                    ${pinIcon}${cleanTitle}
+                    ${pinIcon}${session.title}
                 </button>
                 <button onclick="toggleContextMenu(event, '${session.id}')" class="absolute right-1 top-1/2 -translate-y-1/2 z-20 p-3 text-[var(--text-muted)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:text-[var(--text-main)] rounded-lg">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="4" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="8" cy="12" r="1"/></svg>
@@ -200,7 +206,6 @@ function renderAppStates() {
     const welcomeContainer = document.getElementById('welcome-text-container');
     const svgIcon = `<svg class="w-16 h-16 mb-6 text-blue-500 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
     
-    // RESTORED: Exact user greeting text
     if (State.currentUser) {
         welcomeContainer.innerHTML = `${svgIcon}
             <h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">Hi <span class="text-blue-500">${State.currentUser.name}</span>,</h1>
@@ -429,43 +434,19 @@ function renderFileChips() {
    4. API COMMUNICATION (Frontend -> Backend)
 ═══════════════════════════════════════════ */
 const LexAI = {
-  buildMessages: function(userQuery) {
-    const messages = [];
-
-    // History Compressor. Removes massive raw text files from old messages so it doesn't crash the server.
+  buildMessages: function() {
     const session = SessionManager.getCurrentSession();
-    if (session) {
-        const history = session.messages.slice(-20).map(m => {
-            let content = m.content;
-            if (m.role === 'user' && content.includes('[ATTACHED FILES CONTEXT]')) {
-                content = content.replace(/\[ATTACHED FILES CONTEXT\][\s\S]*?User Query:/, '[Previously Attached Files Context Removed for Speed]\nUser Query:');
-            }
-            return { role: m.role, content: content };
-        });
-        messages.push(...history);
-    }
-
-    let finalQuery = userQuery || "Please analyze the attached files.";
-    const isDeep = document.getElementById('think-toggle')?.checked || false;
-    if (isDeep) finalQuery = `[DEEP ANALYSIS MODE]\n${finalQuery}\nProvide your most thorough, multi-dimensional analysis.`;
-
-    let combinedContent = "";
-    if (State.uploadedDocuments.length > 0) {
-        combinedContent += "[ATTACHED FILES CONTEXT]\n";
-        State.uploadedDocuments.forEach((doc, i) => {
-            combinedContent += `--- FILE ${i+1}: ${doc.name} ---\n${doc.content}\n\n`;
-        });
-        combinedContent += "User Query: " + finalQuery;
-    } else {
-        combinedContent = finalQuery;
-    }
-
-    messages.push({ role: 'user', content: combinedContent });
-    return messages;
+    if (!session) return [];
+    
+    // THE FIX: Returns the last 15 messages exactly as they are, PRESERVING all file data.
+    return session.messages.slice(-15).map(m => ({
+        role: m.role,
+        content: m.content
+    }));
   },
 
-  call: async function(userQuery) {
-    const messages = this.buildMessages(userQuery);
+  call: async function() {
+    const messages = this.buildMessages();
     try {
       const res = await fetch(CONFIG.API_ENDPOINT, {
         method: 'POST',
@@ -509,9 +490,25 @@ async function processMessage() {
   document.getElementById('welcome-screen')?.classList.add('hidden');
   document.getElementById('chat-messages').classList.remove('hidden');
 
-  const displayQuery = query || `[Uploaded ${State.uploadedDocuments.length} attachment(s) for analysis]`;
-  appendBubble('user', displayQuery);
-  SessionManager.addMessage('user', displayQuery);
+  // THE FIX: Bundle the entire payload (Files + Text) and save it directly into the Session Memory
+  let finalQuery = query || "Please analyze the attached files.";
+  const isDeep = document.getElementById('think-toggle')?.checked || false;
+  if (isDeep) finalQuery = `[DEEP ANALYSIS MODE]\n${finalQuery}\nProvide your most thorough, multi-dimensional analysis.`;
+
+  let fullContentToSave = "";
+  if (State.uploadedDocuments.length > 0) {
+      fullContentToSave += "[ATTACHED FILES CONTEXT]\n";
+      State.uploadedDocuments.forEach((doc, i) => {
+          fullContentToSave += `--- FILE ${i+1}: ${doc.name} ---\n${doc.content}\n\n`;
+      });
+      fullContentToSave += "User Query: " + finalQuery;
+  } else {
+      fullContentToSave = finalQuery;
+  }
+
+  // The huge payload is saved to history, but the UI bubble handles it cleanly.
+  appendBubble('user', fullContentToSave);
+  SessionManager.addMessage('user', fullContentToSave);
   
   input.value = '';
   input.style.height = 'auto';
@@ -519,7 +516,7 @@ async function processMessage() {
   const typingId = appendTypingIndicator();
 
   try {
-    const reply = await LexAI.call(query);
+    const reply = await LexAI.call();
     document.getElementById(typingId)?.remove();
     await streamText(reply);
   } catch (err) {
@@ -579,7 +576,8 @@ function appendBubble(role, text, skipAnimation = false) {
   const box = document.getElementById('chat-messages');
   if(!box) return;
   
-  const cleanText = text.replace(/\[IMAGE_DATA.*?\n/g, '[Attached Photo]\n').replace(/\[ATTACHED FILES CONTEXT\][\s\S]*?User Query:/g, '[Attached Files]\nUser Query:');
+  // THE FIX: Hides the massive file payload strings from displaying inside the Chat Bubble
+  const cleanText = text.replace(/\[IMAGE_DATA.*?\n/g, '[Attached Photo]\n').replace(/\[ATTACHED FILES CONTEXT\][\s\S]*?User Query:\s*/g, '[Attached Files]\nUser Query: ');
 
   const div = document.createElement('div');
   const animClass = skipAnimation ? '' : 'anim-fade-up';
