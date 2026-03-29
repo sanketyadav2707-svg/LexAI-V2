@@ -71,10 +71,10 @@
         padding: 10px 16px;
         border-top: 1px solid var(--border-color);
         background-color: var(--bg-input);
-        margin-top: -1px; /* Overlap input top border */
+        margin-top: -1px; 
     }
 
-    /* THE UPDATE: Table Styling & Advanced Markdown Pointers */
+    /* Table Styling & Advanced Markdown Pointers */
     #chat-messages table { width: 100%; margin-top: 1rem; margin-bottom: 1rem; border-collapse: collapse; overflow-x: auto; display: block; }
     #chat-messages th { background-color: var(--hover-bg); color: var(--text-main); font-weight: 600; text-align: left; padding: 12px; border: 1px solid var(--border-color); }
     #chat-messages td { padding: 10px; border: 1px solid var(--border-color); text-align: left; color: var(--text-main); }
@@ -82,7 +82,7 @@
     #chat-messages code { color: #f87171; background-color: rgba(0,0,0,0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }
     #chat-messages pre code { color: inherit; background-color: transparent; padding: 0; }
     
-    /* Re-enabling standard list styles for Marked.js */
+    /* Standard list styles */
     #chat-messages ul { list-style-type: disc !important; margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
     #chat-messages ol { list-style-type: decimal !important; margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
     #chat-messages li { margin-bottom: 0.25rem; }
@@ -117,21 +117,19 @@
           <svg class="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
           <span class="font-bold">Lex</span>
         </div>
-        <div class="flex items-center gap-3">
-          <div class="flex items-center gap-2 text-xs text-muted border border-border px-3 py-1.5 rounded-full bg-inputbg"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> All Systems Operational</div>
-        </div>
+        <div class="hidden md:block"></div>
       </header>
       
-      <div id="chat-messages" class="flex-grow overflow-y-auto p-4 md:p-8 space-y-8 scrollbar-thin pb-36 hidden relative"></div>
+      <div id="chat-messages" class="flex-grow overflow-y-auto p-4 md:p-8 space-y-8 scrollbar-thin pb-56 hidden relative"></div>
       
       <div id="welcome-screen" class="flex-grow flex flex-col items-center justify-center p-6 md:p-10 text-center relative z-10 anim-fade-up">
         <div id="welcome-text-container" class="anim-fade-up anim-delay-1"></div>
       </div>
 
-      <div class="absolute bottom-0 left-0 right-0 p-4 md:p-6 z-30">
-        <div class="chat-container-max relative shadow-xl rounded-2xl bg-inputbg border border-border">
+      <div class="absolute bottom-4 md:bottom-8 left-0 right-0 px-4 md:px-6 z-30 pointer-events-none">
+        <div class="chat-container-max relative shadow-2xl rounded-2xl bg-inputbg border border-border pointer-events-auto">
           
-          <div id="file-staging-area"></div>
+          <div id="file-staging-area" class="rounded-t-2xl"></div>
           
           <div class="flex items-center gap-2 p-3 pr-4">
             <input type="file" id="hidden-file-input" multiple class="hidden" onchange="handleFileSelect(event)">
