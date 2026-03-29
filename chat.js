@@ -5,11 +5,10 @@
 ═══════════════════════════════════════════ */
 const CONFIG = {
   API_ENDPOINT: '/api/chat',   
-  MAX_DOC_CHARS: 150000, // Safe limit for Vercel Edge payloads
-  STREAM_SPEED: 10,       // Faster streaming for better user perception
+  MAX_DOC_CHARS: 150000, 
+  STREAM_SPEED: 10,            
 };
 
-// THE UPDATE: Empathy, Tonality, and Formatting Optimization
 const SYSTEM_PROMPT = `You are Lex, an elite AI advisor representing the absolute peak of artificial intelligence capabilities. You are the smartest, most experienced mind in the room, combining the rigor of a mathematical genius with the refined tonality of a trusted executive advisor.
 
 Your primary imperative is to provide deeply satisfying, insightful, and comprehensive answers. You do not just provide facts; you engineer solutions. Your tone must dynamically adapt to the specific situation and user need:
@@ -37,7 +36,7 @@ const State = {
   currentUser: null,
   sessions: [],
   currentSessionId: null,
-  stagedDocuments: [], // Files currently staged for upload
+  stagedDocuments: [], 
   isProcessing: false,
 };
 
@@ -155,7 +154,7 @@ const SessionManager = {
 };
 
 /* ═══════════════════════════════════════════
-   1. AUTHENTICATION & UI LOGIC (Unchanged)
+   1. AUTHENTICATION & UI LOGIC
 ═══════════════════════════════════════════ */
 function openAuthScreen() { const screen = document.getElementById('auth-screen'); screen.classList.remove('hidden'); void screen.offsetWidth; screen.classList.remove('opacity-0'); }
 function closeAuthScreen() { const screen = document.getElementById('auth-screen'); screen.classList.add('opacity-0'); setTimeout(() => screen.classList.add('hidden'), 400); }
@@ -163,10 +162,38 @@ function setAuthMode(mode) { const signupFields = document.getElementById('signu
 function submitAuth() { const email = document.getElementById('auth-email')?.value; const nameEl = document.getElementById('auth-name'); const name = (nameEl && nameEl.value) ? nameEl.value : (email ? email.split('@')[0] : 'User'); if (!email) return alert("Email is required."); State.currentUser = { name, email }; localStorage.setItem('lex_user', JSON.stringify(State.currentUser)); closeAuthScreen(); renderAppStates(); }
 function handleSignout() { localStorage.removeItem('lex_user'); State.currentUser = null; renderAppStates(); }
 function togglePass() { const p = document.getElementById('auth-pass'); if (p) p.type = p.type === 'password' ? 'text' : 'password'; }
-function renderAppStates() { const welcomeContainer = document.getElementById('welcome-text-container'); const svgIcon = `<svg class="w-16 h-16 mb-6 text-brand opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`; if (State.currentUser) { welcomeContainer.innerHTML = `${svgIcon}<h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">Hi <span class="text-brand">${State.currentUser.name}</span>,</h1><p class="text-muted text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">How can I help you today?</p>`; } else { welcomeContainer.innerHTML = `${svgIcon}<h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">How can I help you today?</h1><p class="text-muted text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Start chatting instantly, or log in to sync your sessions.</p>`; } const sidebarFooter = document.getElementById('sidebar-footer'); const settingsBtn = `<button onclick="toggleSettings()" class="btn-press w-full text-left text-sm font-medium hover-effect p-2.5 rounded-lg flex items-center gap-3 transition-colors"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</button>`; if (State.currentUser) { sidebarFooter.innerHTML = settingsBtn + `<div class="px-2 py-3 mt-2 border-t border-border flex justify-between items-center"><div class="flex items-center gap-2 overflow-hidden"><div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white font-bold text-xs shrink-0">${State.currentUser.name.charAt(0).toUpperCase()}</div><span class="text-sm font-semibold truncate">${State.currentUser.name}</span></div><button onclick="handleSignout()" class="text-muted hover:text-red-500 transition-colors p-2"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>`; } else { sidebarFooter.innerHTML = settingsBtn + `<button onclick="openAuthScreen()" class="btn-press mt-2 w-full py-2.5 rounded-xl bg-inputbg border border-border hover:bg-hover-bg transition-all text-sm font-semibold flex items-center justify-center gap-2">Sign Up / Log In</button>`; } }
+
+// THE NEW HEX-CORE SVG FOR UI ELEMENTS
+const LexSVG = `
+<svg class="w-6 h-6 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  <circle class="lex-core" cx="12" cy="12" r="3" fill="currentColor"></circle>
+</svg>`;
+
+const LexSVGLarge = `
+<svg class="w-16 h-16 mb-6 text-brand opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  <circle class="lex-core" cx="12" cy="12" r="3" fill="currentColor"></circle>
+</svg>`;
+
+function renderAppStates() { 
+    const welcomeContainer = document.getElementById('welcome-text-container'); 
+    if (State.currentUser) { 
+        welcomeContainer.innerHTML = `${LexSVGLarge}<h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">Hi <span class="text-brand">${State.currentUser.name}</span>,</h1><p class="text-muted text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">How can I help you today?</p>`; 
+    } else { 
+        welcomeContainer.innerHTML = `${LexSVGLarge}<h1 class="text-3xl md:text-5xl font-bold mb-3 tracking-tight">How can I help you today?</h1><p class="text-muted text-base md:text-xl max-w-md mx-auto anim-fade-up anim-delay-1">Start chatting instantly, or log in to sync your sessions.</p>`; 
+    } 
+    const sidebarFooter = document.getElementById('sidebar-footer'); 
+    const settingsBtn = `<button onclick="toggleSettings()" class="btn-press w-full text-left text-sm font-medium hover-effect p-2.5 rounded-lg flex items-center gap-3 transition-colors"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</button>`; 
+    if (State.currentUser) { sidebarFooter.innerHTML = settingsBtn + `<div class="px-2 py-3 mt-2 border-t border-border flex justify-between items-center"><div class="flex items-center gap-2 overflow-hidden"><div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white font-bold text-xs shrink-0">${State.currentUser.name.charAt(0).toUpperCase()}</div><span class="text-sm font-semibold truncate">${State.currentUser.name}</span></div><button onclick="handleSignout()" class="text-muted hover:text-red-500 transition-colors p-2"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>`; } else { sidebarFooter.innerHTML = settingsBtn + `<button onclick="openAuthScreen()" class="btn-press mt-2 w-full py-2.5 rounded-xl bg-inputbg border border-border hover:bg-hover-bg transition-all text-sm font-semibold flex items-center justify-center gap-2">Sign Up / Log In</button>`; } 
+}
 
 /* ═══════════════════════════════════════════
-   2. GLOBAL CONTEXT MENU & UI HELPERS (Unchanged)
+   2. GLOBAL CONTEXT MENU & UI HELPERS
 ═══════════════════════════════════════════ */
 let currentContextMenuId = null;
 function toggleContextMenu(event, id) { event.stopPropagation(); const menu = document.getElementById('global-context-menu'); if (currentContextMenuId === id && !menu.classList.contains('hidden')) { closeAllMenus(); return; } closeAllMenus(); currentContextMenuId = id; const session = State.sessions.find(s => s.id === id); if (!session) return; const pinText = session.isPinned ? 'Unpin' : 'Pin'; const buttonRect = event.currentTarget.getBoundingClientRect(); menu.innerHTML = `<div class="hover:bg-hover-bg p-3 cursor-pointer transition-colors border-b border-border" onclick="event.stopPropagation(); SessionManager.share('${id}')">Share</div><div class="hover:bg-hover-bg p-3 cursor-pointer transition-colors border-b border-border" onclick="event.stopPropagation(); SessionManager.rename('${id}')">Rename</div><div class="hover:bg-hover-bg p-3 cursor-pointer transition-colors border-b border-border" onclick="event.stopPropagation(); SessionManager.togglePin('${id}')">${pinText}</div><div class="hover:bg-red-500/10 text-red-500 p-3 cursor-pointer transition-colors" onclick="event.stopPropagation(); SessionManager.deleteChat('${id}')">Delete</div>`; menu.classList.remove('hidden'); const menuRect = menu.getBoundingClientRect(); let topPos = buttonRect.bottom + 5; let leftPos = buttonRect.right - menuRect.width; if (topPos + menuRect.height > window.innerHeight) topPos = buttonRect.top - menuRect.height - 5; if (leftPos < 0) leftPos = 10; menu.style.top = `${topPos}px`; menu.style.left = `${leftPos}px`; }
@@ -235,7 +262,7 @@ const DocProcessor = {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 1000; // Optimal Vision payload size
+                    const MAX_WIDTH = 1000; 
                     const scaleSize = MAX_WIDTH / img.width;
                     canvas.width = MAX_WIDTH;
                     canvas.height = img.height * scaleSize;
@@ -243,7 +270,6 @@ const DocProcessor = {
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
                     
-                    // Generate UI Thumbnail (small, low quality data URL)
                     const thumbCanvas = document.createElement('canvas');
                     const THUMB_SIZE = 40;
                     thumbCanvas.width = THUMB_SIZE;
@@ -296,7 +322,6 @@ function removeStagedFile(index) {
     renderFileStagingArea();
 }
 
-// THE UPDATE: Modern file staged area with thumbnails/icons
 function renderFileStagingArea() {
     const container = document.getElementById('file-staging-area');
     if (!container) return;
@@ -331,8 +356,6 @@ const LexAI = {
   buildMessages: function() {
     const session = SessionManager.getCurrentSession();
     if (!session) return [];
-    
-    // THE BUG FIX: The amnesia is cured. Returns all 15 messages UNCOMPRESSED to maintain total multi-file memory.
     return session.messages.slice(-15).map(m => ({
         role: m.role,
         content: m.content
@@ -369,8 +392,6 @@ const LexAI = {
 /* ═══════════════════════════════════════════
    5. UI RENDERING & STREAMING
 ═══════════════════════════════════════════ */
-const LexSVG = `<svg class="w-6 h-6 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
-
 async function processMessage() {
   if (State.isProcessing) return;
 
@@ -384,7 +405,6 @@ async function processMessage() {
   document.getElementById('welcome-screen')?.classList.add('hidden');
   document.getElementById('chat-messages').classList.remove('hidden');
 
-  // Bundle staged files and text into the single prompt.
   let finalQuery = query || "Please analyze the attached files.";
   const isDeep = document.getElementById('think-toggle')?.checked || false;
   if (isDeep) finalQuery = `[DEEP ANALYSIS MODE]\n${finalQuery}\nProvide your most thorough, multi-dimensional analysis.`;
@@ -400,18 +420,14 @@ async function processMessage() {
       fullContentToSave = finalQuery;
   }
 
-  // Preserve the STAGED FILES list for the appendBubble function before clearing it.
   const filesSentThisMessage = [...State.stagedDocuments];
 
-  // The huge payload is saved to history, but the UI bubble handles it cleanly.
-  // THE UPDATE: Pass file array to bubble.
   appendBubble('user', fullContentToSave, false, filesSentThisMessage);
   SessionManager.addMessage('user', fullContentToSave);
   
   input.value = '';
   input.style.height = 'auto';
 
-  // THE UPDATE: Staged files are only cleared *after* send.
   State.stagedDocuments = [];
   renderFileStagingArea();
 
@@ -435,12 +451,12 @@ function streamText(fullText) {
     const div = document.createElement('div');
     div.className = 'flex justify-start w-full anim-fade-up';
     
-    div.innerHTML = `<div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="mt-4 flex-shrink-0">${LexSVG}</div><div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm"><div id="streaming-p" class="typing-cursor w-full"></div></div></div>`;
+    div.innerHTML = `<div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="mt-4 shrink-0">${LexSVG}</div><div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm"><div id="streaming-p" class="typing-cursor w-full"></div></div></div>`;
     box.appendChild(div);
 
     const el = document.getElementById('streaming-p');
     const textToStream = String(fullText);
-    let i = 0; const chunkSize = 5; // Faster streaming rate
+    let i = 0; const chunkSize = 5; 
 
     const tick = setInterval(() => {
       if (i < textToStream.length) {
@@ -453,38 +469,23 @@ function streamText(fullText) {
         el.id = '';
         el.style.opacity = '1';
         el.classList.add('streamed-content-final');
-        box.scrollTop = box.scrollHeight; // Keep at bottom
+        box.scrollTop = box.scrollHeight; 
         resolve();
       }
     }, CONFIG.STREAM_SPEED);
   });
 }
 
-// THE UPDATE: FLAWLESS MARKDOWN RENDERING (Fixing Lists, Tables, LaTeX)
 function formatHTML(text) {
   if (!text) return '';
-  
-  // 1. Pre-sanitize raw AI output
   let sanitized = text
-    // Clean unreasonable artifacts (e.g., LaTeX confuse-ups)
-    .replace(/^\$2(.*)$/gm, '$1') // Example Fix: $2 artifact to raw list item
-    
-    // Secure disclaimers
+    .replace(/^\$2(.*)$/gm, '$1') 
     .replace(/^⚠️ \*\*(.*?)\*\*(.*)$/gm, '<div class="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-muted text-sm flex items-start gap-3 w-full"><span class="text-xl leading-none shrink-0">⚠️</span> <div><strong class="text-main font-semibold">$1</strong>$2</div></div>');
 
-  // 2. Marked.js configuration for tables and pointers
-  marked.setOptions({
-    gfm: true, // GitHub Flavored Markdown (pointers, tables)
-    breaks: true, // Handle single line breaks
-    sanitize: false, // We sanitized above, Marked handles rest safely
-    smartLists: true,
-  });
-
-  // 3. Render flawless HTML
+  marked.setOptions({ gfm: true, breaks: true, sanitize: false, smartLists: true });
   return marked.parse(sanitized);
 }
 
-// THE UPDATE: UI Display logic to hide base64 and show files above user bubble (Gemini Look)
 function appendBubble(role, text, skipAnimation = false, filesArray = []) {
   const box = document.getElementById('chat-messages');
   if(!box) return;
@@ -492,20 +493,17 @@ function appendBubble(role, text, skipAnimation = false, filesArray = []) {
   const animClass = skipAnimation ? '' : 'anim-fade-up';
   
   if (role === 'user') {
-    // 1. Hide massive image data strings in the prompt bubble
     let cleanText = text
-        .replace(/\[IMAGE_DATA.*?\n/g, '') // Hide image data
-        .replace(/\[ATTACHED FILES CONTEXT\][\s\S]*?User Query:/g, 'files:') // Minimal context prefix
-        .replace(/User Query:\s*/g, ''); // Clear user query text
+        .replace(/\[IMAGE_DATA.*?\n/g, '') 
+        .replace(/\[ATTACHED FILES CONTEXT\][\s\S]*?User Query:/g, 'files:') 
+        .replace(/User Query:\s*/g, ''); 
 
-    // 2. Staging files above prompt just like Gemini
     let fileChipsHtml = "";
     if (filesArray && filesArray.length > 0) {
         fileChipsHtml = `<div class="flex flex-wrap gap-2 mb-3">`;
         filesArray.forEach(doc => {
             let mediaHtml = doc.thumbnail;
             if (doc.type.startsWith('image/')) { mediaHtml = `<img src="${doc.thumbnail}" class="w-8 h-8 rounded object-cover shrink-0">`; }
-            
             fileChipsHtml += `
             <div class="flex items-center gap-2.5 bg-brand/10 border border-brand/20 p-2 rounded-lg text-xs">
                 ${mediaHtml}
@@ -527,7 +525,6 @@ function appendBubble(role, text, skipAnimation = false, filesArray = []) {
     box.appendChild(div);
 
   } else {
-    // 3. Render AI Response Flawlessly
     const div = document.createElement('div');
     div.className = `flex justify-start w-full ${animClass}`;
     div.innerHTML = `<div class="flex items-start gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="mt-4 shrink-0">${LexSVG}</div><div class="ai-bubble p-4 md:p-6 text-base w-full break-words shadow-sm"><div>${formatHTML(String(text))}</div></div></div>`;
@@ -543,7 +540,8 @@ function appendTypingIndicator() {
   const div = document.createElement('div');
   div.id = id;
   div.className = 'flex justify-start w-full anim-fade-up';
-  div.innerHTML = `<div class="flex items-center gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="ai-thinking-logo shrink-0">${LexSVG}</div></div>`;
+  // THE NEW THINKING ANIMATION CLASS IS APPLIED HERE
+  div.innerHTML = `<div class="flex items-center gap-4 max-w-[95%] md:max-w-[85%] w-full"><div class="ai-thinking-logo shrink-0 w-6 h-6">${LexSVG}</div></div>`;
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
   return id;
@@ -583,7 +581,7 @@ window.onload = () => {
   }
 
   renderAppStates();
-  renderFileStagingArea(); // Ensure clean input bar
+  renderFileStagingArea(); 
   SessionManager.init(); 
 
   if (typeof pdfjsLib === 'undefined') {
